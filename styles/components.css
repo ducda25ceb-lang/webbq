@@ -45,6 +45,12 @@
   gap: 8px;
 }
 
+.nav-signup-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .ghost-link,
 .ghost-btn {
   padding: 8px 12px;
@@ -82,7 +88,28 @@
   padding: 10px 16px;
   border-radius: 999px;
   border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
   color: var(--text);
+  cursor: pointer;
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    color 0.25s ease;
+}
+
+.btn-outline:hover {
+  background: rgba(201, 163, 91, 0.12);
+  border-color: rgba(226, 187, 111, 0.55);
+  color: var(--gold-strong);
+}
+
+.btn-outline:disabled,
+.btn-gold:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  filter: none;
 }
 
 .cards-grid {
@@ -107,7 +134,8 @@
 }
 
 .dish-card img {
-  height: 180px;
+  width: 100%;
+  aspect-ratio: 4 / 3;
   object-fit: cover;
 }
 
@@ -121,6 +149,15 @@
   background: rgba(0, 0, 0, 0.22);
 }
 
+.footer-social-row a {
+  color: var(--gold-strong);
+  text-decoration: underline;
+}
+
+.footer-social-row a:hover {
+  filter: brightness(1.08);
+}
+
 .footer-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -128,9 +165,66 @@
   padding: 30px 0;
 }
 
+.footer-subscribe-title {
+  margin-top: 14px;
+  margin-bottom: 8px;
+}
+
+.footer-subscribe-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.footer-subscribe-form input {
+  flex: 1 1 190px;
+  min-width: 0;
+  padding: 11px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(201, 163, 91, 0.35);
+  background: #17191b;
+  color: var(--text);
+}
+
+.footer-subscribe-msg {
+  margin: 8px 0 0;
+  font-size: 0.92rem;
+}
+
+.footer-subscribe-msg.is-success {
+  color: #95f19a;
+}
+
+.footer-subscribe-msg.is-error {
+  color: #ff9f9f;
+}
+
+.footer-subscribe-form .btn-gold:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 .comment-form {
   display: grid;
   gap: 12px;
+}
+
+.auth-mode-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.auth-mode-toggle button {
+  min-width: 114px;
+}
+
+.auth-provider-btn {
+  width: 100%;
+  margin-top: 12px;
 }
 
 .comment-form input,

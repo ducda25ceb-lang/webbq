@@ -6,6 +6,7 @@ Single-page frontend for Ember BBQ restaurant with menu browsing, booking flow, 
 
 - React 18 (ES Modules via CDN)
 - React Router 6 (HashRouter)
+- Supabase for auth and booking storage when configured
 - Vanilla CSS (modular style files in `styles/`)
 
 ## Project Structure
@@ -37,6 +38,36 @@ npx serve .
 ```
 
 Then open the local URL shown in terminal.
+
+## Supabase Setup
+
+The app reads Supabase credentials from `index.html` through `window.__SUPABASE_CONFIG__`.
+
+Replace the placeholder values with your project URL and anon key:
+
+```html
+<script>
+  window.__SUPABASE_CONFIG__ = {
+    url: "https://YOUR_PROJECT_ID.supabase.co",
+    anonKey: "YOUR_SUPABASE_ANON_KEY",
+  };
+</script>
+```
+
+Recommended tables:
+
+- `bookings`: `booking_code`, `user_id`, `customer_name`, `customer_email`, `phone`, `booking_date`, `booking_time`, `guests`, `status`
+- `menu_comments`: `name`, `comment_text`, `created_at`
+- `contact_requests`: `name`, `email`, `message`, `created_at`
+
+Suggested row-level security policies:
+
+- Allow authenticated users to insert into `bookings`.
+- Allow authenticated users to select only rows where `user_id = auth.uid()`.
+- Allow anon/authenticated users to select and insert `menu_comments`.
+- Allow anon/authenticated users to insert `contact_requests`.
+
+The matching SQL scaffold lives in [supabase/migrations/0001_init.sql](supabase/migrations/0001_init.sql) and setup notes are in [supabase/README.md](supabase/README.md).
 
 ## Routing Notes
 

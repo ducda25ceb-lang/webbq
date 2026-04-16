@@ -294,8 +294,9 @@
   display: flex;
   gap: 16px;
   width: max-content;
-  padding: 4px;
-  animation: drink-carousel-slide 26s linear infinite alternate;
+  padding: 4px 0;
+  animation: drinkMarquee 34s linear infinite;
+  will-change: transform;
 }
 
 .drink-carousel-viewport:hover .drink-carousel-track {
@@ -303,18 +304,18 @@
 }
 
 .drink-card {
-  width: min(220px, 72vw);
+  flex: 0 0 clamp(180px, 22vw, 240px);
+  width: clamp(180px, 22vw, 240px);
   overflow: hidden;
   border-radius: 18px;
   border: 1px solid rgba(201, 163, 91, 0.22);
   background: rgba(255, 255, 255, 0.03);
-  flex: 0 0 auto;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
 }
 
 .drink-card img {
   width: 100%;
-  height: 150px;
+  aspect-ratio: 4 / 3;
   object-fit: cover;
 }
 
@@ -331,15 +332,6 @@
   margin: 0;
   color: var(--gold-strong);
   font-weight: 700;
-}
-
-@keyframes drink-carousel-slide {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(calc(-50% - 8px));
-  }
 }
 
 .home-video-section {
@@ -515,6 +507,14 @@
   height: 100%;
 }
 
+.video-wrap video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .chat-box {
   margin-top: 28px;
   border: 1px solid var(--line);
@@ -600,8 +600,22 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .drink-carousel-viewport {
+    scroll-behavior: auto;
+  }
+
   .drink-carousel-track {
     animation: none;
-    overflow-x: auto;
+    transform: none;
+  }
+}
+
+@keyframes drinkMarquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
   }
 }

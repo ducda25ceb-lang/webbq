@@ -12,15 +12,31 @@ export function VideoPage() {
       "div",
       { className: "panel reveal" },
       React.createElement(
+        "p",
+        { className: "muted" },
+        "Video chế biến bò được phát trực tiếp từ file local để tránh lỗi nhúng YouTube.",
+      ),
+      React.createElement(
         "div",
         { className: "video-wrap" },
-        React.createElement("iframe", {
-          src: "https://www.youtube.com/embed/a4xS6xqVhJY",
-          title: "BBQ cooking",
-          allow:
-            "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
-          allowFullScreen: true,
-        }),
+        React.createElement(
+          "video",
+          {
+            src: "./assets/videos/home-screen.mp4",
+            controls: true,
+            autoPlay: true,
+            muted: true,
+            loop: true,
+            playsInline: true,
+            preload: "metadata",
+          },
+          "Trình duyệt của bạn không hỗ trợ phát video.",
+        ),
+      ),
+      React.createElement(
+        "p",
+        { className: "muted" },
+        "Nếu bạn muốn đổi đúng video chế biến bò riêng, chỉ cần chép file mới vào assets/videos và cập nhật đường dẫn trong trang này.",
       ),
     ),
   );

@@ -6,6 +6,7 @@ import {
   popularDishIds,
 } from "../data/mockData.js";
 import { useScrollReveal } from "../components/ScrollReveal.js";
+import { isSupabaseConfigured, supabase } from "../lib/supabase.js";
 
 const quickTags = [
   { key: "all", label: "Tất cả" },
@@ -13,6 +14,9 @@ const quickTags = [
   { key: "premium", label: "Premium" },
   { key: "group", label: "Đi nhóm" },
 ];
+
+const fallbackDishImage =
+  "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1200&auto=format&fit=crop";
 
 export function MenuPage() {
   useScrollReveal();
@@ -32,6 +36,56 @@ export function MenuPage() {
     },
   ]);
   const [form, setForm] = useState({ name: "", text: "" });
+  const [commentError, setCommentError] = useState("");
+  const [commentSaving, setCommentSaving] = useState(false);
+
+  React.useEffect(() => {
+    let activeRequest = true;
+
+    async function loadComments() {
+      if (!isSupabaseConfigured) {
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from("menu_comments")
+          .select("id, name, comment_text, created_at")
+          .order("created_at", { ascending: false })
+          .limit(30);
+
+        if (!activeRequest) {
+          return;
+        }
+
+        if (error) {
+          setCommentError("Không thể tải nhận xét từ database.");
+          return;
+        }
+
+        setCommentError("");
+        setComments(
+          (data || []).map((row) => ({
+            id: row.id,
+            name: row.name,
+            text: row.comment_text,
+          })),
+        );
+      } catch {
+        if (!activeRequest) {
+          return;
+        }
+
+        setCommentError("Không thể kết nối database để tải nhận xét.");
+      }
+    }
+
+    loadComments();
+
+    return () => {
+      activeRequest = false;
+    };
+  }, []);
 
   const items = useMemo(() => {
     let result =
@@ -67,14 +121,62 @@ export function MenuPage() {
     [],
   );
 
-  const submitComment = (e) => {
+  const carouselItems = useMemo(() => [...drinkSpecials, ...drinkSpecials], []);
+
+  const submitComment = async (e) => {
     e.preventDefault();
-    if (!form.name.trim() || !form.text.trim()) return;
+    const name = form.name.trim();
+    const text = form.text.trim();
+
+    if (!name || !text) {
+      setCommentError("Bạn cần nhập tên và nội dung nhận xét.");
+      return;
+    }
+
+    if (isSupabaseConfigured) {
+      setCommentSaving(true);
+      try {
+        const { data, error } = await supabase
+          .from("menu_comments")
+          .insert({
+            name,
+            comment_text: text,
+          })
+          .select("id, name, comment_text")
+          .single();
+
+        if (error) {
+          setCommentError("Không thể gửi nhận xét. Vui lòng thử lại.");
+          return;
+        }
+
+        setComments((prev) => [
+          { id: data.id, name: data.name, text: data.comment_text },
+          ...prev,
+        ]);
+        setCommentError("");
+        setForm({ name: "", text: "" });
+        return;
+      } catch {
+        setCommentError("Không thể kết nối database để gửi nhận xét.");
+        return;
+      } finally {
+        setCommentSaving(false);
+      }
+    }
+
     setComments((prev) => [
-      { id: Date.now(), name: form.name.trim(), text: form.text.trim() },
+      { id: Date.now(), name, text },
       ...prev,
     ]);
+    setCommentError("");
     setForm({ name: "", text: "" });
+  };
+
+  const handleImageError = (e) => {
+    // Prevent infinite loop if fallback image also fails.
+    e.currentTarget.onerror = null;
+    e.currentTarget.src = fallbackDishImage;
   };
 
   return React.createElement(
@@ -167,11 +269,21 @@ export function MenuPage() {
         React.createElement(
           "div",
           { className: "drink-carousel-track" },
-          [...drinkSpecials, ...drinkSpecials].map((drink, index) =>
+          carouselItems.map((drink, index) =>
             React.createElement(
               "article",
-              { key: `${drink.id}-${index}`, className: "drink-card" },
-              React.createElement("img", { src: drink.image, alt: drink.name }),
+              {
+                key: `${drink.id}-${index}`,
+                className: "drink-card",
+                "aria-hidden":
+                  index >= drinkSpecials.length ? "true" : undefined,
+              },
+              React.createElement("img", {
+                src: drink.image,
+                alt: drink.name,
+                loading: "lazy",
+                onError: handleImageError,
+              }),
               React.createElement(
                 "div",
                 { className: "drink-body" },
@@ -195,7 +307,12 @@ export function MenuPage() {
             React.createElement(
               "article",
               { className: "dish-card", key: dish.id },
-              React.createElement("img", { src: dish.image, alt: dish.name }),
+              React.createElement("img", {
+                src: dish.image,
+                alt: dish.name,
+                loading: "lazy",
+                onError: handleImageError,
+              }),
               React.createElement(
                 "div",
                 { className: "dish-body" },
@@ -218,6 +335,13 @@ export function MenuPage() {
       "section",
       { className: "chat-box reveal" },
       React.createElement("h2", null, "Khung chat nhận xét"),
+      isSupabaseConfigured
+        ? React.createElement(
+            "p",
+            { className: "muted" },
+            "Nhận xét sẽ được lưu vào Supabase để hiển thị cho các lượt truy cập sau.",
+          )
+        : null,
       React.createElement(
         "form",
         { className: "comment-form", onSubmit: submitComment },
@@ -234,10 +358,17 @@ export function MenuPage() {
         }),
         React.createElement(
           "button",
-          { className: "btn-gold", type: "submit" },
-          "Gửi nhận xét",
+          {
+            className: "btn-gold",
+            type: "submit",
+            disabled: commentSaving,
+          },
+          commentSaving ? "Đang gửi..." : "Gửi nhận xét",
         ),
       ),
+      commentError
+        ? React.createElement("p", { className: "error-msg" }, commentError)
+        : null,
       React.createElement(
         "div",
         { className: "comment-list" },

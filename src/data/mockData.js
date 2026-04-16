@@ -13,7 +13,7 @@
     category: "heo",
     price: 280000,
     image:
-      "https://images.unsplash.com/photo-1558030006-450675393462?q=80&w=1200&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1200&auto=format&fit=crop",
   },
   {
     id: 3,
@@ -21,7 +21,7 @@
     category: "hai-san",
     price: 360000,
     image:
-      "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?q=80&w=1200&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1565299507177-b0ac66763828?q=80&w=1200&auto=format&fit=crop",
   },
   {
     id: 4,
@@ -29,7 +29,7 @@
     category: "combo",
     price: 890000,
     image:
-      "https://images.unsplash.com/photo-1603360946369-dc9bb6258143?q=80&w=1200&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1525755662778-989d0524087e?q=80&w=1200&auto=format&fit=crop",
   },
   {
     id: 5,
@@ -53,7 +53,7 @@
     category: "heo",
     price: 340000,
     image:
-      "https://images.unsplash.com/photo-1550547660-d9450f859349?q=80&w=1200&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1603360946369-dc9bb6258143?q=80&w=1200&auto=format&fit=crop",
   },
   {
     id: 8,
@@ -61,7 +61,7 @@
     category: "heo",
     price: 315000,
     image:
-      "https://images.unsplash.com/photo-1598515213962-9dcfce52f0f2?q=80&w=1200&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1558030006-450675393462?q=80&w=1200&auto=format&fit=crop",
   },
   {
     id: 9,
@@ -77,7 +77,7 @@
     category: "ga",
     price: 245000,
     image:
-      "https://images.unsplash.com/photo-1604908554027-8f1030b2f6a9?q=80&w=1200&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1608039755401-742074f0548d?q=80&w=1200&auto=format&fit=crop",
   },
   {
     id: 11,
@@ -85,7 +85,7 @@
     category: "hai-san",
     price: 295000,
     image:
-      "https://images.unsplash.com/photo-1625944524160-8f8522dd1a6c?q=80&w=1200&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?q=80&w=1200&auto=format&fit=crop",
   },
   {
     id: 12,
@@ -109,7 +109,31 @@
     category: "combo",
     price: 1150000,
     image:
-      "https://images.unsplash.com/photo-1525755662778-989d0524087e?q=80&w=1200&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1543332164-6e82f355bad5?q=80&w=1200&auto=format&fit=crop",
+  },
+  {
+    id: 15,
+    name: "Khoai Tây Chiên Bơ Tỏi",
+    category: "rau",
+    price: 95000,
+    image:
+      "https://images.unsplash.com/photo-1576107232684-1279f390859f?q=80&w=1200&auto=format&fit=crop",
+  },
+  {
+    id: 16,
+    name: "Khoai Tây Chiên Lắc Phô Mai",
+    category: "rau",
+    price: 109000,
+    image:
+      "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?q=80&w=1200&auto=format&fit=crop",
+  },
+  {
+    id: 17,
+    name: "Khoai Tây Múi Cau Nướng Thảo Mộc",
+    category: "rau",
+    price: 119000,
+    image:
+      "https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?q=80&w=1200&auto=format&fit=crop",
   },
 ];
 
@@ -140,21 +164,63 @@ export const drinkSpecials = [
     name: "Mojito Không Cồn",
     price: 78000,
     image:
-      "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?q=80&w=1200&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1461823385004-d7660947a7c0?q=80&w=1200&auto=format&fit=crop",
   },
   {
     id: 105,
     name: "Nước Ép Cam Gừng",
     price: 72000,
     image:
-      "https://images.unsplash.com/photo-1570009649353-1f9f15d0c5d8?q=80&w=1200&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1497534446932-c925b458314e?q=80&w=1200&auto=format&fit=crop",
   },
   {
     id: 106,
     name: "Trà Đào Kem Cheese",
     price: 69000,
     image:
-      "https://images.unsplash.com/photo-1556679343-c7306c1976bc?q=80&w=1200&auto=format&fit=crop",
+      "https://images.pexels.com/photos/33573170/pexels-photo-33573170.jpeg?cs=srgb&dl=pexels-soc-nang-d-ng-2150345854-33573170.jpg&fm=jpg",
+  },
+  {
+    id: 107,
+    name: "Soda Dâu Tươi",
+    price: 59000,
+    image:
+      "https://images.pexels.com/photos/6574739/pexels-photo-6574739.jpeg?cs=srgb&dl=pexels-roman-odintsov-6574739.jpg&fm=jpg",
+  },
+  {
+    id: 108,
+    name: "Matcha Latte Đá",
+    price: 76000,
+    image:
+      "https://images.unsplash.com/photo-1515823064-d6e0c04616a7?q=80&w=1200&auto=format&fit=crop",
+  },
+  {
+    id: 109,
+    name: "Nước Ép Ổi Hồng",
+    price: 63000,
+    image:
+      "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?q=80&w=1200&auto=format&fit=crop",
+  },
+  {
+    id: 110,
+    name: "Cold Brew Cam",
+    price: 81000,
+    image:
+      "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?q=80&w=1200&auto=format&fit=crop",
+  },
+  {
+    id: 111,
+    name: "Sữa Chua Việt Quất",
+    price: 68000,
+    image:
+      "https://images.unsplash.com/photo-1488477181946-6428a0291777?q=80&w=1200&auto=format&fit=crop",
+  },
+  {
+    id: 112,
+    name: "Trà Gừng Mật Ong",
+    price: 52000,
+    image:
+      "https://images.unsplash.com/photo-1610450622827-195cb7308af8?q=80&w=1200&auto=format&fit=crop",
   },
 ];
 
@@ -192,9 +258,14 @@ export const guestReviews = [
 ];
 
 export const businessInfo = {
-  address: "12 Nguyễn Huệ, Quận 1, TP.HCM",
+  address: "Lotte Mart Đà Nẵng",
   hotline: "0909 123 456",
-  email: "booking@emberbbq.vn",
+  email: "ducanh12082007@gmail.com",
+  socials: {
+    facebook: "https://www.facebook.com/",
+    instagram: "https://www.instagram.com/",
+    tiktok: "https://www.tiktok.com/",
+  },
   parking: "Có bãi giữ xe máy và ô tô gần nhà hàng (miễn phí 2 giờ)",
   hours: [
     { day: "Thứ 2 - Thứ 6", time: "11:00 - 14:00 | 17:00 - 22:30" },

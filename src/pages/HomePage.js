@@ -3,8 +3,16 @@ import { Link } from "https://esm.sh/react-router-dom@6.28.0?deps=react@18.2.0,r
 import { featuredDishes, guestReviews, stats } from "../data/mockData.js";
 import { useScrollReveal } from "../components/ScrollReveal.js";
 
+const fallbackDishImage =
+  "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1200&auto=format&fit=crop";
+
 export function HomePage() {
   useScrollReveal();
+
+  const handleImageError = (e) => {
+    e.currentTarget.onerror = null;
+    e.currentTarget.src = fallbackDishImage;
+  };
 
   return React.createElement(
     "div",
@@ -68,6 +76,7 @@ export function HomePage() {
         React.createElement("img", {
           src: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=1800&auto=format&fit=crop",
           alt: "Không gian nhà hàng Ember BBQ",
+          onError: handleImageError,
         }),
       ),
       React.createElement(
@@ -126,25 +135,28 @@ export function HomePage() {
       React.createElement(
         "div",
         { className: "cards-grid" },
-        featuredDishes
-          .slice(0, 3)
-          .map((dish) =>
+        featuredDishes.slice(0, 3).map((dish) =>
+          React.createElement(
+            "article",
+            { className: "dish-card", key: dish.id },
+            React.createElement("img", {
+              src: dish.image,
+              alt: dish.name,
+              loading: "lazy",
+              onError: handleImageError,
+            }),
             React.createElement(
-              "article",
-              { className: "dish-card", key: dish.id },
-              React.createElement("img", { src: dish.image, alt: dish.name }),
+              "div",
+              { className: "dish-body" },
+              React.createElement("h3", null, dish.name),
               React.createElement(
-                "div",
-                { className: "dish-body" },
-                React.createElement("h3", null, dish.name),
-                React.createElement(
-                  "p",
-                  null,
-                  `${dish.price.toLocaleString("vi-VN")} VND`,
-                ),
+                "p",
+                null,
+                `${dish.price.toLocaleString("vi-VN")} VND`,
               ),
             ),
           ),
+        ),
       ),
     ),
     React.createElement(

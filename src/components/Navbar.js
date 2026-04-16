@@ -61,9 +61,21 @@ export function Navbar() {
               ),
             )
           : React.createElement(
-              Link,
-              { to: "/dang-nhap", className: "ghost-link" },
-              "Đăng nhập",
+              React.Fragment,
+              null,
+              React.createElement(
+                Link,
+                { to: "/dang-nhap?mode=login", className: "ghost-link" },
+                "Đăng nhập",
+              ),
+              React.createElement(
+                Link,
+                {
+                  to: "/dang-nhap?mode=signup",
+                  className: "btn-gold nav-signup-link",
+                },
+                "Đăng ký",
+              ),
             ),
       ),
     ),

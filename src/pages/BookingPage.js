@@ -1,5 +1,7 @@
 ﻿import React, { useMemo, useState } from "https://esm.sh/react@18.2.0";
 import { useScrollReveal } from "../components/ScrollReveal.js";
+import { useAuth } from "../context/AuthContext.js";
+import { isSupabaseConfigured, supabase } from "../lib/supabase.js";
 
 const timeSlots = [
   "11:00",
@@ -14,11 +16,27 @@ const timeSlots = [
 
 const blockedSlots = ["19:30"];
 
+function mapBookingErrorMessage(message) {
+  const text = (message || "").toLowerCase();
+
+  if (text.includes("row-level security policy")) {
+    return "Bạn chưa có phiên đăng nhập hợp lệ để đặt bàn. Vui lòng đăng xuất, đăng nhập lại và xác thực email (nếu được yêu cầu).";
+  }
+
+  if (text.includes("jwt") || text.includes("token")) {
+    return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại rồi thử đặt bàn.";
+  }
+
+  return message || "Không thể lưu đặt bàn. Vui lòng thử lại.";
+}
+
 export function BookingPage() {
   useScrollReveal();
+  const { user } = useAuth();
   const [submitted, setSubmitted] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [saving, setSaving] = useState(false);
   const [bookingCode, setBookingCode] = useState("");
   const [form, setForm] = useState({
     name: "",
@@ -35,8 +53,17 @@ export function BookingPage() {
     return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(payload)}`;
   }, [form]);
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
+
+    if (isSupabaseConfigured && !user) {
+      setErrorMsg(
+        "Bạn cần đăng nhập trước khi đặt bàn để hệ thống lưu lịch sử vào tài khoản.",
+      );
+      setSubmitted(false);
+      return;
+    }
+
     const onlyDigitsPhone = form.phone.replace(/\D/g, "");
 
     if (!/^\d{9,11}$/.test(onlyDigitsPhone)) {
@@ -59,10 +86,51 @@ export function BookingPage() {
       return;
     }
 
-    setErrorMsg("");
-    setSubmitted(true);
-    setCompleted(false);
-    setBookingCode(`EMB${Date.now().toString().slice(-6)}`);
+    const generatedCode = `EMB${Date.now().toString().slice(-6)}`;
+
+    setSaving(true);
+
+    try {
+      if (isSupabaseConfigured) {
+        const { data: sessionData, error: sessionError } =
+          await supabase.auth.getSession();
+        const sessionUser = sessionData?.session?.user;
+
+        if (sessionError || !sessionUser) {
+          throw new Error(
+            "Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại trước khi đặt bàn.",
+          );
+        }
+
+        const payload = {
+          booking_code: generatedCode,
+          user_id: sessionUser.id,
+          customer_name: form.name.trim(),
+          customer_email: sessionUser.email || user?.email || null,
+          phone: onlyDigitsPhone,
+          booking_date: form.date,
+          booking_time: form.time,
+          guests: form.guests,
+          status: "Đang chờ",
+        };
+
+        const { error } = await supabase.from("bookings").insert(payload);
+
+        if (error) {
+          throw error;
+        }
+      }
+
+      setErrorMsg("");
+      setSubmitted(true);
+      setCompleted(false);
+      setBookingCode(generatedCode);
+    } catch (error) {
+      setErrorMsg(mapBookingErrorMessage(error.message));
+      setSubmitted(false);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const onComplete = () => {
@@ -76,6 +144,15 @@ export function BookingPage() {
       "section",
       { className: "panel reveal" },
       React.createElement("h1", null, "Đặt Bàn"),
+      isSupabaseConfigured
+        ? React.createElement(
+            "p",
+            { className: "muted" },
+            user
+              ? `Đơn đặt bàn sẽ được lưu vào Supabase cho ${user.name}.`
+              : "Hãy đăng nhập trước để đơn đặt bàn được gắn vào lịch sử của bạn.",
+          )
+        : null,
       React.createElement(
         "form",
         { className: "booking-form", onSubmit: onSubmit },
@@ -139,8 +216,8 @@ export function BookingPage() {
         ),
         React.createElement(
           "button",
-          { type: "submit", className: "btn-gold" },
-          "Xác nhận đặt bàn",
+          { type: "submit", className: "btn-gold", disabled: saving },
+          saving ? "Đang lưu..." : "Xác nhận đặt bàn",
         ),
       ),
       errorMsg

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="900" viewBox="0 0 1800 900" role="img" aria-label="Hero BBQ background">
+  <defs>
+    <linearGradient id="heroBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#130f0d"/>
+      <stop offset="55%" stop-color="#2a1a12"/>
+      <stop offset="100%" stop-color="#090b0c"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="45%" r="40%">
+      <stop offset="0%" stop-color="#f7c66f" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#f7c66f" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1800" height="900" fill="url(#heroBg)"/>
+  <rect width="1800" height="900" fill="url(#glow)"/>
+  <g opacity="0.2" stroke="#f0c781" stroke-width="2">
+    <path d="M0 700 C 300 620, 500 780, 800 700 S 1400 620, 1800 700" fill="none"/>
+    <path d="M0 760 C 280 680, 520 840, 840 760 S 1420 680, 1800 760" fill="none"/>
+    <path d="M0 820 C 260 740, 560 900, 900 820 S 1440 740, 1800 820" fill="none"/>
+  </g>
+  <text x="170" y="220" fill="#f4dec0" font-size="78" font-family="Georgia, 'Times New Roman', serif" opacity="0.92">Ember BBQ</text>
+  <text x="172" y="286" fill="#d8b071" font-size="30" font-family="'Segoe UI', Tahoma, sans-serif" letter-spacing="5">FIRE. FLAVOR. MOMENTS.</text>
+</svg>
