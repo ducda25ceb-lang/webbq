@@ -1,13 +1,18 @@
-﻿import React from "https://esm.sh/react@18.2.0";
+import React from "https://esm.sh/react@18.2.0";
 import { Link } from "https://esm.sh/react-router-dom@6.28.0?deps=react@18.2.0,react-dom@18.2.0";
 import { featuredDishes, guestReviews, stats } from "../data/mockData.js";
 import { useScrollReveal } from "../components/ScrollReveal.js";
+import { useDevicePreferences } from "../components/useDevicePreferences.js";
 
 const fallbackDishImage =
   "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1200&auto=format&fit=crop";
 
 export function HomePage() {
   useScrollReveal();
+  const { isMobile, prefersReducedMotion, saveData } = useDevicePreferences();
+  const shouldAutoplayVideo =
+    !isMobile && !prefersReducedMotion && !saveData;
+  const shouldLoopVideo = !isMobile && !prefersReducedMotion;
 
   const handleImageError = (e) => {
     e.currentTarget.onerror = null;
@@ -102,7 +107,9 @@ export function HomePage() {
       React.createElement(
         "p",
         { className: "home-video-sub" },
-        "Video quay màn hình được phát tự động không âm thanh để khách xem nhanh trải nghiệm tại nhà hàng.",
+        shouldAutoplayVideo
+          ? "Video sẽ tự phát không âm thanh để khách xem nhanh trải nghiệm tại nhà hàng."
+          : "Trên mobile hoặc chế độ tiết kiệm dữ liệu, video sẽ chờ bạn bấm phát để trang tải mượt hơn.",
       ),
       React.createElement(
         "div",
@@ -117,12 +124,12 @@ export function HomePage() {
           {
             className: "home-video",
             src: "./assets/videos/home-screen.mp4",
-            autoPlay: true,
+            autoPlay: shouldAutoplayVideo,
             muted: true,
-            loop: true,
+            loop: shouldLoopVideo,
             playsInline: true,
             controls: true,
-            preload: "metadata",
+            preload: shouldAutoplayVideo ? "metadata" : "none",
           },
           "Trình duyệt của bạn không hỗ trợ phát video.",
         ),

@@ -572,6 +572,14 @@
     grid-template-columns: 1fr;
   }
 
+  .hero {
+    min-height: 380px;
+  }
+
+  .hero-content {
+    padding: 22px 18px;
+  }
+
   .story-section {
     grid-template-columns: 1fr;
     gap: 18px;
@@ -594,12 +602,43 @@
     padding: 16px;
   }
 
+  .drink-carousel-viewport {
+    overflow-x: auto;
+    padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+  }
+
+  .drink-carousel-track {
+    animation: none;
+    width: max-content;
+    padding-bottom: 2px;
+  }
+
+  .drink-card {
+    scroll-snap-align: start;
+  }
+
   .home-video-sub {
     margin-bottom: 14px;
+  }
+
+  .home-video,
+  .video-wrap video {
+    object-fit: contain;
+    background: #000;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .hero-content > * {
+    animation: none;
+    transition: none;
+    opacity: 1;
+    transform: none;
+  }
+
   .drink-carousel-viewport {
     scroll-behavior: auto;
   }

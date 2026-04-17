@@ -4,6 +4,14 @@ export function useScrollReveal(selector = ".reveal") {
   useEffect(() => {
     const nodes = document.querySelectorAll(selector);
     if (!nodes.length) return;
+    const reducedMotion = globalThis.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    )?.matches;
+
+    if (reducedMotion || typeof IntersectionObserver === "undefined") {
+      nodes.forEach((node) => node.classList.add("is-visible"));
+      return;
+    }
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -14,7 +22,7 @@ export function useScrollReveal(selector = ".reveal") {
           }
         });
       },
-      { threshold: 0.15 },
+      { threshold: 0.08, rootMargin: "0px 0px -6% 0px" },
     );
 
     nodes.forEach((node) => observer.observe(node));

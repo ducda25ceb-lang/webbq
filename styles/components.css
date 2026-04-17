@@ -273,4 +273,26 @@
     overflow-x: auto;
     padding-bottom: 6px;
   }
+
+  .topbar {
+    backdrop-filter: none;
+  }
+
+  .nav-link,
+  .ghost-link,
+  .ghost-btn,
+  .nav-signup-link {
+    white-space: nowrap;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .btn-gold:hover,
+  .btn-outline:hover,
+  .dish-card:hover,
+  .nav-link:hover {
+    transform: none;
+    box-shadow: none;
+    filter: none;
+  }
 }
