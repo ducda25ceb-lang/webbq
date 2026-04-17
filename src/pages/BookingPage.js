@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from "https://esm.sh/react@18.2.0";
+import React, { useEffect, useMemo, useState } from "https://esm.sh/react@18.2.0";
 import { useScrollReveal } from "../components/ScrollReveal.js";
 import { useAuth } from "../context/AuthContext.js";
 import { isSupabaseConfigured, supabase } from "../lib/supabase.js";
@@ -14,10 +14,27 @@ const timeSlots = [
   "21:30",
 ];
 
-const blockedSlots = ["19:30"];
+const manuallyBlockedSlots = ["19:30"];
 
-function mapBookingErrorMessage(message) {
-  const text = (message || "").toLowerCase();
+function normalizeBookedSlot(row) {
+  if (typeof row === "string") {
+    return row;
+  }
+
+  return row?.booking_time || "";
+}
+
+function mapBookingErrorMessage(error) {
+  const message = error?.message || error || "";
+  const text = message.toLowerCase();
+
+  if (
+    error?.code === "23505" ||
+    text.includes("slot_conflict") ||
+    text.includes("duplicate key value")
+  ) {
+    return "Khung giờ này vừa có người khác đặt trước. Vui lòng chọn giờ khác.";
+  }
 
   if (text.includes("row-level security policy")) {
     return "Bạn chưa có phiên đăng nhập hợp lệ để đặt bàn. Vui lòng đăng xuất, đăng nhập lại và xác thực email (nếu được yêu cầu).";
@@ -33,6 +50,8 @@ function mapBookingErrorMessage(message) {
 export function BookingPage() {
   useScrollReveal();
   const { user } = useAuth();
+  const [bookedSlots, setBookedSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -47,11 +66,62 @@ export function BookingPage() {
   });
 
   const today = useMemo(() => new Date().toISOString().split("T")[0], []);
+  const unavailableSlots = useMemo(
+    () => [...new Set([...manuallyBlockedSlots, ...bookedSlots])],
+    [bookedSlots],
+  );
 
   const qrUrl = useMemo(() => {
     const payload = `EMBER BBQ|${form.name || "Khách"}|${form.date || "NoDate"}|${form.time}|${form.guests}khách`;
     return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(payload)}`;
   }, [form]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadBookedSlots() {
+      if (!isSupabaseConfigured || !form.date || form.date < today) {
+        setBookedSlots([]);
+        setLoadingSlots(false);
+        return;
+      }
+
+      setLoadingSlots(true);
+
+      try {
+        const { data, error } = await supabase.rpc("get_booked_slots", {
+          target_date: form.date,
+        });
+
+        if (!active) {
+          return;
+        }
+
+        if (error) {
+          setBookedSlots([]);
+          return;
+        }
+
+        setBookedSlots((data || []).map(normalizeBookedSlot).filter(Boolean));
+      } catch {
+        if (!active) {
+          return;
+        }
+
+        setBookedSlots([]);
+      } finally {
+        if (active) {
+          setLoadingSlots(false);
+        }
+      }
+    }
+
+    loadBookedSlots();
+
+    return () => {
+      active = false;
+    };
+  }, [form.date, today]);
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -80,7 +150,7 @@ export function BookingPage() {
       return;
     }
 
-    if (blockedSlots.includes(form.time)) {
+    if (unavailableSlots.includes(form.time)) {
       setErrorMsg("Khung giờ này đã kín bàn. Vui lòng chọn giờ khác.");
       setSubmitted(false);
       return;
@@ -100,6 +170,23 @@ export function BookingPage() {
           throw new Error(
             "Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại trước khi đặt bàn.",
           );
+        }
+
+        const { data: latestBookedSlots, error: bookedSlotsError } =
+          await supabase.rpc("get_booked_slots", {
+            target_date: form.date,
+          });
+
+        if (bookedSlotsError) {
+          throw bookedSlotsError;
+        }
+
+        const hasConflict = (latestBookedSlots || [])
+          .map(normalizeBookedSlot)
+          .some((slot) => slot === form.time);
+
+        if (hasConflict || manuallyBlockedSlots.includes(form.time)) {
+          throw new Error("SLOT_CONFLICT");
         }
 
         const payload = {
@@ -126,7 +213,7 @@ export function BookingPage() {
       setCompleted(false);
       setBookingCode(generatedCode);
     } catch (error) {
-      setErrorMsg(mapBookingErrorMessage(error.message));
+      setErrorMsg(mapBookingErrorMessage(error));
       setSubmitted(false);
     } finally {
       setSaving(false);
@@ -187,9 +274,9 @@ export function BookingPage() {
               {
                 key: slot,
                 value: slot,
-                disabled: blockedSlots.includes(slot),
+                disabled: unavailableSlots.includes(slot),
               },
-              blockedSlots.includes(slot) ? `${slot} (Đã kín)` : slot,
+              unavailableSlots.includes(slot) ? `${slot} (Đã kín)` : slot,
             ),
           ),
         ),
@@ -212,7 +299,9 @@ export function BookingPage() {
         React.createElement(
           "p",
           { className: "slot-hint" },
-          "Khung 19:30 đang kín, hệ thống tự khóa để tránh đặt trùng.",
+          loadingSlots && form.date
+            ? "Đang kiểm tra các khung giờ đã được đặt."
+            : "Khung giờ đã có người đặt sẽ tự khóa để tránh trùng lịch.",
         ),
         React.createElement(
           "button",
