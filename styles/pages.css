@@ -567,6 +567,33 @@
   text-align: left;
 }
 
+.dashboard-status-cell {
+  min-width: 190px;
+}
+
+.dashboard-action-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.dashboard-action-btn {
+  padding: 8px 14px;
+}
+
+.dashboard-cancel-btn {
+  color: #ffb0b0;
+  border-color: rgba(255, 159, 159, 0.4);
+  background: rgba(255, 159, 159, 0.06);
+}
+
+.dashboard-cancel-btn:hover {
+  color: #ffd4d4;
+  border-color: rgba(255, 159, 159, 0.6);
+  background: rgba(255, 159, 159, 0.14);
+}
+
 @media (max-width: 920px) {
   .booking-layout {
     grid-template-columns: 1fr;

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-labelledby="title desc">
+  <title id="title">Veggie Grill</title>
+  <desc id="desc">Stylized vegetable platter illustration for menu cards.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#17311b" />
+      <stop offset="100%" stop-color="#4f8a33" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)" rx="36" />
+  <circle cx="640" cy="110" r="94" fill="#d6ff9f" fill-opacity=".16" />
+  <ellipse cx="400" cy="362" rx="258" ry="136" fill="#0f150e" />
+  <ellipse cx="400" cy="342" rx="232" ry="112" fill="#1e331d" stroke="#8ac25b" stroke-width="8" />
+  <circle cx="290" cy="307" r="44" fill="#ffaf42" />
+  <circle cx="390" cy="286" r="52" fill="#a5d84f" />
+  <circle cx="480" cy="322" r="47" fill="#e75f4b" />
+  <circle cx="382" cy="370" r="38" fill="#7dcf78" />
+  <path d="M288 257c6-24 23-38 49-44M486 266c14-20 34-31 59-35M380 225c11-16 29-29 50-35" stroke="#eafad5" stroke-width="8" stroke-linecap="round" opacity=".82" />
+  <text x="70" y="108" fill="#e4f7c8" font-family="Arial, sans-serif" font-size="30" letter-spacing="5">FIRE AND GREENS</text>
+  <text x="70" y="160" fill="#f4ffe6" font-family="Georgia, serif" font-size="64" font-weight="700">Veggie Sides</text>
+  <text x="70" y="516" fill="#d8edba" font-family="Arial, sans-serif" font-size="28">Roasted roots and fresh crunch</text>
+</svg>

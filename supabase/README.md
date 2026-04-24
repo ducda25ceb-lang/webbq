@@ -5,6 +5,10 @@ Use this folder to create the backend for Ember BBQ.
 ## What this scaffold includes
 
 - `migrations/0001_init.sql`: creates `bookings`, `menu_comments`, `contact_requests` and row-level security policies.
+- `migrations/0002_booking_slot_conflict.sql`: blocks duplicate time slots for the same date.
+- `migrations/0003_booking_confirmation_email.sql`: adds timestamps for the post-QR confirmation email flow.
+- `migrations/0004_booking_cancellation.sql`: releases booked slots again after a customer cancellation with lost deposit.
+- `functions/send-booking-confirmation`: confirms a booking and sends the confirmation email.
 
 ## How to use
 
@@ -51,3 +55,41 @@ The frontend expects these tables:
 - Menu comments are public read/write (anon + authenticated).
 - Contact requests are insertable by everyone and readable by authenticated users.
 - The frontend already falls back to mock data when Supabase is not configured.
+
+## Booking Confirmation Email
+
+The QR completion button now calls the `send-booking-confirmation` Edge Function.
+The QR image itself can remain a static asset on the frontend. The email flow is separate from how you host or embed the QR image.
+
+Set these secrets before deploying the function:
+
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `RESEND_API_KEY`
+- `BOOKING_FROM_EMAIL`
+
+Suggested deploy flow with Supabase CLI:
+
+```bash
+supabase secrets set SUPABASE_URL=... SUPABASE_ANON_KEY=... SUPABASE_SERVICE_ROLE_KEY=... RESEND_API_KEY=... BOOKING_FROM_EMAIL=...
+supabase functions deploy send-booking-confirmation
+```
+
+The function:
+
+- validates the logged-in user
+- loads the matching booking by `booking_code`
+- updates the booking status to `Đã xác nhận`
+- sends the email via Resend
+- stores `confirmation_email_sent_at` so repeated clicks do not resend duplicates
+
+## Booking Cancellation
+
+Customers can cancel a booking from the dashboard. The booking is marked as `Đã hủy - mất cọc`.
+
+Apply `0004_booking_cancellation.sql` so that:
+
+- cancelled bookings no longer block their old time slot
+- `get_booked_slots` ignores cancelled bookings
+- the released time slot can be booked again

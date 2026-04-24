@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-labelledby="title desc">
+  <title id="title">Drinks</title>
+  <desc id="desc">Stylized drinks illustration for menu cards.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#10233f" />
+      <stop offset="100%" stop-color="#1d8e8a" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)" rx="36" />
+  <circle cx="650" cy="118" r="92" fill="#d6fff4" fill-opacity=".16" />
+  <rect x="220" y="160" width="130" height="260" rx="36" fill="#d8f8ff" fill-opacity=".12" stroke="#b3fff0" stroke-width="8" />
+  <rect x="345" y="188" width="122" height="230" rx="34" fill="#ffe1c0" fill-opacity=".14" stroke="#ffe6aa" stroke-width="8" />
+  <rect x="470" y="145" width="116" height="275" rx="34" fill="#ffc0da" fill-opacity=".12" stroke="#ffd2f2" stroke-width="8" />
+  <path d="M252 206h68M372 232h68M499 192h58M288 145l30-52M532 145l24-48" stroke="#f4fffb" stroke-width="8" stroke-linecap="round" />
+  <path d="M236 294c34 24 74 24 98 0M360 318c30 20 66 20 92 0M486 274c28 22 60 22 84 0" stroke="#e7fff8" stroke-width="8" stroke-linecap="round" opacity=".8" />
+  <text x="70" y="108" fill="#d6f8f1" font-family="Arial, sans-serif" font-size="30" letter-spacing="5">CHILLED PAIRINGS</text>
+  <text x="70" y="160" fill="#f1fffc" font-family="Georgia, serif" font-size="64" font-weight="700">Signature Drinks</text>
+  <text x="70" y="516" fill="#d2f1ec" font-family="Arial, sans-serif" font-size="28">Fresh sips for every grill table</text>
+</svg>

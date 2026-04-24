@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-labelledby="title desc">
+  <title id="title">Combo Feast</title>
+  <desc id="desc">Stylized combo platter illustration for menu cards.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#1f1735" />
+      <stop offset="100%" stop-color="#6e4caf" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)" rx="36" />
+  <circle cx="148" cy="118" r="96" fill="#ffd98f" fill-opacity=".17" />
+  <ellipse cx="400" cy="362" rx="262" ry="140" fill="#120f1c" />
+  <ellipse cx="400" cy="342" rx="236" ry="114" fill="#261c3d" stroke="#b596ef" stroke-width="8" />
+  <rect x="232" y="255" width="114" height="88" rx="24" fill="#d26648" transform="rotate(-7 289 299)" />
+  <rect x="338" y="236" width="118" height="96" rx="26" fill="#60b9c9" transform="rotate(5 397 284)" />
+  <rect x="458" y="256" width="106" height="84" rx="24" fill="#9fcb56" transform="rotate(-6 511 298)" />
+  <circle cx="392" cy="355" r="52" fill="#f4d48a" opacity=".92" />
+  <path d="M262 298h61M372 278h49M482 297h47M373 355h38" stroke="#fff6de" stroke-width="8" stroke-linecap="round" opacity=".84" />
+  <text x="70" y="108" fill="#e7ddfb" font-family="Arial, sans-serif" font-size="30" letter-spacing="5">TABLE FEAST</text>
+  <text x="70" y="160" fill="#fbf7ff" font-family="Georgia, serif" font-size="64" font-weight="700">Combo Sets</text>
+  <text x="70" y="516" fill="#dfd1fa" font-family="Arial, sans-serif" font-size="28">Built for sharing and celebration</text>
+</svg>

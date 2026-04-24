@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-labelledby="title desc">
+  <title id="title">Pork BBQ</title>
+  <desc id="desc">Stylized pork platter illustration for menu cards.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#34181d" />
+      <stop offset="100%" stop-color="#9b4d57" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)" rx="36" />
+  <circle cx="128" cy="112" r="94" fill="#ffd3c4" fill-opacity=".15" />
+  <ellipse cx="400" cy="364" rx="255" ry="136" fill="#1d1212" />
+  <ellipse cx="400" cy="344" rx="230" ry="112" fill="#35211f" stroke="#bf8774" stroke-width="8" />
+  <path d="M242 305c18-51 64-82 128-82 57 0 113 23 148 70 21 29 21 69-2 98-25 31-61 48-103 48-38 0-80-12-114-30-42-23-71-60-57-104z" fill="#de8d78" />
+  <path d="M280 281c31 16 62 22 94 18M374 269c31 17 61 22 89 17M300 345c34 18 76 24 125 19" stroke="#ffe2d8" stroke-width="8" stroke-linecap="round" opacity=".8" />
+  <circle cx="300" cy="287" r="11" fill="#fff2ed" opacity=".8" />
+  <circle cx="452" cy="328" r="9" fill="#fff2ed" opacity=".74" />
+  <text x="70" y="108" fill="#f4ded6" font-family="Arial, sans-serif" font-size="30" letter-spacing="5">KOREAN BBQ</text>
+  <text x="70" y="160" fill="#fff4ee" font-family="Georgia, serif" font-size="64" font-weight="700">Pork Plates</text>
+  <text x="70" y="516" fill="#f7d8cf" font-family="Arial, sans-serif" font-size="28">Sweet glaze and seared edges</text>
+</svg>

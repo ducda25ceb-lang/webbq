@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-labelledby="title desc">
+  <title id="title">Beef BBQ</title>
+  <desc id="desc">Stylized beef platter illustration for menu cards.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#2e1714" />
+      <stop offset="100%" stop-color="#7f2d1f" />
+    </linearGradient>
+    <linearGradient id="glow" x1="0" x2="1">
+      <stop offset="0%" stop-color="#f0b35d" />
+      <stop offset="100%" stop-color="#ffd37d" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)" rx="36" />
+  <circle cx="660" cy="120" r="88" fill="#f6d08c" fill-opacity=".16" />
+  <ellipse cx="400" cy="360" rx="250" ry="132" fill="#170e0d" />
+  <ellipse cx="400" cy="338" rx="228" ry="112" fill="#2b1915" stroke="#8f4d2f" stroke-width="8" />
+  <rect x="250" y="238" width="126" height="104" rx="28" fill="#b55138" transform="rotate(-10 313 290)" />
+  <rect x="330" y="220" width="130" height="112" rx="30" fill="#cb5d3f" transform="rotate(8 395 276)" />
+  <rect x="430" y="248" width="122" height="98" rx="26" fill="#a64531" transform="rotate(-6 491 297)" />
+  <path d="M240 286c46 18 92 18 138 0M326 245c42 18 83 18 125 0M435 295c36 13 73 13 109 0" stroke="url(#glow)" stroke-width="8" stroke-linecap="round" opacity=".78" />
+  <text x="70" y="108" fill="#f5e8cf" font-family="Arial, sans-serif" font-size="30" letter-spacing="5">EMBER SIGNATURE</text>
+  <text x="70" y="160" fill="#fff4dc" font-family="Georgia, serif" font-size="64" font-weight="700">Beef Selection</text>
+  <text x="70" y="516" fill="#f0d8b1" font-family="Arial, sans-serif" font-size="28">Charcoal grilled premium cuts</text>
+</svg>

@@ -1,7 +1,12 @@
 import React, { useEffect, useMemo, useState } from "https://esm.sh/react@18.2.0";
 import { useScrollReveal } from "../components/ScrollReveal.js";
 import { useAuth } from "../context/AuthContext.js";
-import { isSupabaseConfigured, supabase } from "../lib/supabase.js";
+import {
+  BOOKING_STATUS_PENDING_QR,
+  finalizeBookingPayment,
+  isSupabaseConfigured,
+  supabase,
+} from "../lib/supabase.js";
 
 const timeSlots = [
   "11:00",
@@ -33,29 +38,32 @@ function mapBookingErrorMessage(error) {
     text.includes("slot_conflict") ||
     text.includes("duplicate key value")
   ) {
-    return "Khung giờ này vừa có người khác đặt trước. Vui lòng chọn giờ khác.";
+    return "Khung gi\u1edd n\u00e0y v\u1eeba c\u00f3 ng\u01b0\u1eddi kh\u00e1c \u0111\u1eb7t tr\u01b0\u1edbc. Vui l\u00f2ng ch\u1ecdn gi\u1edd kh\u00e1c.";
   }
 
   if (text.includes("row-level security policy")) {
-    return "Bạn chưa có phiên đăng nhập hợp lệ để đặt bàn. Vui lòng đăng xuất, đăng nhập lại và xác thực email (nếu được yêu cầu).";
+    return "B\u1ea1n ch\u01b0a c\u00f3 phi\u00ean \u0111\u0103ng nh\u1eadp h\u1ee3p l\u1ec7 \u0111\u1ec3 \u0111\u1eb7t b\u00e0n. Vui l\u00f2ng \u0111\u0103ng xu\u1ea5t v\u00e0 \u0111\u0103ng nh\u1eadp l\u1ea1i.";
   }
 
   if (text.includes("jwt") || text.includes("token")) {
-    return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại rồi thử đặt bàn.";
+    return "Phi\u00ean \u0111\u0103ng nh\u1eadp \u0111\u00e3 h\u1ebft h\u1ea1n. Vui l\u00f2ng \u0111\u0103ng nh\u1eadp l\u1ea1i r\u1ed3i th\u1eed \u0111\u1eb7t b\u00e0n.";
   }
 
-  return message || "Không thể lưu đặt bàn. Vui lòng thử lại.";
+  return message || "Kh\u00f4ng th\u1ec3 l\u01b0u \u0111\u1eb7t b\u00e0n. Vui l\u00f2ng th\u1eed l\u1ea1i.";
 }
 
 export function BookingPage() {
   useScrollReveal();
   const { user } = useAuth();
+  const configuredQrImage = globalThis.__BOOKING_CONFIG__?.paymentQrImage || "";
   const [bookedSlots, setBookedSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [saving, setSaving] = useState(false);
+  const [confirmationMsg, setConfirmationMsg] = useState("");
+  const [confirmingPayment, setConfirmingPayment] = useState(false);
   const [bookingCode, setBookingCode] = useState("");
   const [form, setForm] = useState({
     name: "",
@@ -72,9 +80,13 @@ export function BookingPage() {
   );
 
   const qrUrl = useMemo(() => {
-    const payload = `EMBER BBQ|${form.name || "Khách"}|${form.date || "NoDate"}|${form.time}|${form.guests}khách`;
+    if (configuredQrImage) {
+      return configuredQrImage;
+    }
+
+    const payload = `EMBER BBQ|${form.name || "Khach"}|${form.date || "NoDate"}|${form.time}|${form.guests} khach`;
     return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(payload)}`;
-  }, [form]);
+  }, [configuredQrImage, form]);
 
   useEffect(() => {
     let active = true;
@@ -123,12 +135,14 @@ export function BookingPage() {
     };
   }, [form.date, today]);
 
-  const onSubmit = async (e) => {
-    e.preventDefault();
+  const onSubmit = async (event) => {
+    event.preventDefault();
+    setConfirmationMsg("");
+    setCompleted(false);
 
     if (isSupabaseConfigured && !user) {
       setErrorMsg(
-        "Bạn cần đăng nhập trước khi đặt bàn để hệ thống lưu lịch sử vào tài khoản.",
+        "B\u1ea1n c\u1ea7n \u0111\u0103ng nh\u1eadp tr\u01b0\u1edbc khi \u0111\u1eb7t b\u00e0n \u0111\u1ec3 h\u1ec7 th\u1ed1ng l\u01b0u l\u1ecbch s\u1eed v\u00e0o t\u00e0i kho\u1ea3n.",
       );
       setSubmitted(false);
       return;
@@ -138,20 +152,20 @@ export function BookingPage() {
 
     if (!/^\d{9,11}$/.test(onlyDigitsPhone)) {
       setErrorMsg(
-        "Số điện thoại chưa hợp lệ (9-11 số). Vui lòng kiểm tra lại.",
+        "S\u1ed1 \u0111i\u1ec7n tho\u1ea1i ch\u01b0a h\u1ee3p l\u1ec7 (9-11 s\u1ed1). Vui l\u00f2ng ki\u1ec3m tra l\u1ea1i.",
       );
       setSubmitted(false);
       return;
     }
 
     if (!form.date || form.date < today) {
-      setErrorMsg("Ngày đặt bàn phải từ hôm nay trở đi.");
+      setErrorMsg("Ng\u00e0y \u0111\u1eb7t b\u00e0n ph\u1ea3i t\u1eeb h\u00f4m nay tr\u1edf \u0111i.");
       setSubmitted(false);
       return;
     }
 
     if (unavailableSlots.includes(form.time)) {
-      setErrorMsg("Khung giờ này đã kín bàn. Vui lòng chọn giờ khác.");
+      setErrorMsg("Khung gi\u1edd n\u00e0y \u0111\u00e3 k\u00edn b\u00e0n. Vui l\u00f2ng ch\u1ecdn gi\u1edd kh\u00e1c.");
       setSubmitted(false);
       return;
     }
@@ -168,7 +182,7 @@ export function BookingPage() {
 
         if (sessionError || !sessionUser) {
           throw new Error(
-            "Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại trước khi đặt bàn.",
+            "Phi\u00ean \u0111\u0103ng nh\u1eadp kh\u00f4ng h\u1ee3p l\u1ec7. Vui l\u00f2ng \u0111\u0103ng nh\u1eadp l\u1ea1i tr\u01b0\u1edbc khi \u0111\u1eb7t b\u00e0n.",
           );
         }
 
@@ -198,7 +212,7 @@ export function BookingPage() {
           booking_date: form.date,
           booking_time: form.time,
           guests: form.guests,
-          status: "Đang chờ",
+          status: BOOKING_STATUS_PENDING_QR,
         };
 
         const { error } = await supabase.from("bookings").insert(payload);
@@ -220,8 +234,41 @@ export function BookingPage() {
     }
   };
 
-  const onComplete = () => {
-    setCompleted(true);
+  const onComplete = async () => {
+    if (!submitted || !bookingCode || confirmingPayment) {
+      return;
+    }
+
+    if (!isSupabaseConfigured) {
+      setCompleted(true);
+      setConfirmationMsg(
+        "\u0110\u00e3 x\u00e1c nh\u1eadn \u0111\u1eb7t b\u00e0n. Email x\u00e1c nh\u1eadn ch\u1ec9 ho\u1ea1t \u0111\u1ed9ng khi Supabase \u0111\u01b0\u1ee3c c\u1ea5u h\u00ecnh.",
+      );
+      return;
+    }
+
+    setConfirmingPayment(true);
+    setErrorMsg("");
+    setConfirmationMsg("");
+
+    try {
+      const result = await finalizeBookingPayment({
+        bookingCode,
+        userId: user?.id,
+      });
+
+      setCompleted(true);
+      setConfirmationMsg(result.message);
+    } catch (error) {
+      const message =
+        error?.context?.message ||
+        error?.message ||
+        "Kh\u00f4ng th\u1ec3 ho\u00e0n t\u1ea5t \u0111\u1eb7t b\u00e0n sau khi qu\u00e9t QR.";
+      setErrorMsg(message);
+      setCompleted(false);
+    } finally {
+      setConfirmingPayment(false);
+    }
   };
 
   return React.createElement(
@@ -230,14 +277,14 @@ export function BookingPage() {
     React.createElement(
       "section",
       { className: "panel reveal" },
-      React.createElement("h1", null, "Đặt Bàn"),
+      React.createElement("h1", null, "\u0110\u1eb7t B\u00e0n"),
       isSupabaseConfigured
         ? React.createElement(
             "p",
             { className: "muted" },
             user
-              ? `Đơn đặt bàn sẽ được lưu vào Supabase cho ${user.name}.`
-              : "Hãy đăng nhập trước để đơn đặt bàn được gắn vào lịch sử của bạn.",
+              ? `\u0110\u01a1n \u0111\u1eb7t b\u00e0n s\u1ebd \u0111\u01b0\u1ee3c l\u01b0u v\u00e0o Supabase cho ${user.name}.`
+              : "H\u00e3y \u0111\u0103ng nh\u1eadp tr\u01b0\u1edbc \u0111\u1ec3 \u0111\u01a1n \u0111\u1eb7t b\u00e0n \u0111\u01b0\u1ee3c g\u1eafn v\u00e0o l\u1ecbch s\u1eed c\u1ee7a b\u1ea1n.",
           )
         : null,
       React.createElement(
@@ -245,28 +292,35 @@ export function BookingPage() {
         { className: "booking-form", onSubmit: onSubmit },
         React.createElement("input", {
           required: true,
-          placeholder: "Họ và tên",
+          placeholder: "H\u1ecd v\u00e0 t\u00ean",
           value: form.name,
-          onChange: (e) => setForm((p) => ({ ...p, name: e.target.value })),
+          onChange: (event) =>
+            setForm((previous) => ({ ...previous, name: event.target.value })),
         }),
         React.createElement("input", {
           required: true,
-          placeholder: "Số điện thoại",
+          placeholder: "S\u1ed1 \u0111i\u1ec7n tho\u1ea1i",
           value: form.phone,
-          onChange: (e) => setForm((p) => ({ ...p, phone: e.target.value })),
+          onChange: (event) =>
+            setForm((previous) => ({
+              ...previous,
+              phone: event.target.value,
+            })),
         }),
         React.createElement("input", {
           required: true,
           type: "date",
           min: today,
           value: form.date,
-          onChange: (e) => setForm((p) => ({ ...p, date: e.target.value })),
+          onChange: (event) =>
+            setForm((previous) => ({ ...previous, date: event.target.value })),
         }),
         React.createElement(
           "select",
           {
             value: form.time,
-            onChange: (e) => setForm((p) => ({ ...p, time: e.target.value })),
+            onChange: (event) =>
+              setForm((previous) => ({ ...previous, time: event.target.value })),
           },
           timeSlots.map((slot) =>
             React.createElement(
@@ -276,7 +330,9 @@ export function BookingPage() {
                 value: slot,
                 disabled: unavailableSlots.includes(slot),
               },
-              unavailableSlots.includes(slot) ? `${slot} (Đã kín)` : slot,
+              unavailableSlots.includes(slot)
+                ? `${slot} (\u0110\u00e3 k\u00edn)`
+                : slot,
             ),
           ),
         ),
@@ -284,15 +340,18 @@ export function BookingPage() {
           "select",
           {
             value: form.guests,
-            onChange: (e) =>
-              setForm((p) => ({ ...p, guests: Number(e.target.value) })),
+            onChange: (event) =>
+              setForm((previous) => ({
+                ...previous,
+                guests: Number(event.target.value),
+              })),
           },
-          Array.from({ length: 12 }).map((_, idx) => {
-            const guest = idx + 1;
+          Array.from({ length: 12 }).map((_, index) => {
+            const guest = index + 1;
             return React.createElement(
               "option",
               { key: guest, value: guest },
-              `${guest} khách`,
+              `${guest} kh\u00e1ch`,
             );
           }),
         ),
@@ -300,45 +359,46 @@ export function BookingPage() {
           "p",
           { className: "slot-hint" },
           loadingSlots && form.date
-            ? "Đang kiểm tra các khung giờ đã được đặt."
-            : "Khung giờ đã có người đặt sẽ tự khóa để tránh trùng lịch.",
+            ? "\u0110ang ki\u1ec3m tra c\u00e1c khung gi\u1edd \u0111\u00e3 \u0111\u01b0\u1ee3c \u0111\u1eb7t."
+            : "Khung gi\u1edd \u0111\u00e3 c\u00f3 ng\u01b0\u1eddi \u0111\u1eb7t s\u1ebd t\u1ef1 kh\u00f3a \u0111\u1ec3 tr\u00e1nh tr\u00f9ng l\u1ecbch.",
         ),
         React.createElement(
           "button",
           { type: "submit", className: "btn-gold", disabled: saving },
-          saving ? "Đang lưu..." : "Xác nhận đặt bàn",
+          saving ? "\u0110ang l\u01b0u..." : "X\u00e1c nh\u1eadn \u0111\u1eb7t b\u00e0n",
         ),
       ),
       errorMsg
         ? React.createElement("p", { className: "error-msg" }, errorMsg)
         : null,
-      submitted &&
-        React.createElement(
-          "div",
-          { className: "booking-result" },
-          React.createElement("h3", null, "Giữ bàn thành công"),
-          React.createElement("p", null, `Mã đặt bàn: ${bookingCode}`),
-          React.createElement(
-            "p",
-            null,
-            `Thông tin: ${form.name} - ${form.date} lúc ${form.time} - ${form.guests} khách`,
-          ),
-          React.createElement(
-            "p",
-            null,
-            "Bàn sẽ được giữ trong 15 phút kể từ giờ hẹn. Vui lòng quét QR để cọc bàn.",
-          ),
-        ),
+      submitted
+        ? React.createElement(
+            "div",
+            { className: "booking-result" },
+            React.createElement("h3", null, "Gi\u1eef b\u00e0n th\u00e0nh c\u00f4ng"),
+            React.createElement("p", null, `M\u00e3 \u0111\u1eb7t b\u00e0n: ${bookingCode}`),
+            React.createElement(
+              "p",
+              null,
+              `Th\u00f4ng tin: ${form.name} - ${form.date} l\u00fac ${form.time} - ${form.guests} kh\u00e1ch`,
+            ),
+            React.createElement(
+              "p",
+              null,
+              "B\u00e0n s\u1ebd \u0111\u01b0\u1ee3c gi\u1eef trong 15 ph\u00fat k\u1ec3 t\u1eeb gi\u1edd h\u1eb9n. Vui l\u00f2ng qu\u00e9t QR \u0111\u1ec3 c\u1ecdc b\u00e0n.",
+            ),
+          )
+        : null,
     ),
     React.createElement(
       "aside",
       { className: "panel qr-panel reveal" },
-      React.createElement("h2", null, "QR thanh toán"),
-      React.createElement("img", { src: qrUrl, alt: "QR thanh toán" }),
+      React.createElement("h2", null, "QR thanh to\u00e1n"),
+      React.createElement("img", { src: qrUrl, alt: "QR thanh to\u00e1n" }),
       React.createElement(
         "p",
         null,
-        "Sau khi đặt bàn, bạn có thể quét mã QR này để thanh toán tiền cọc 100.000 VND.",
+        "Sau khi \u0111\u1eb7t b\u00e0n, b\u1ea1n c\u00f3 th\u1ec3 qu\u00e9t m\u00e3 QR n\u00e0y \u0111\u1ec3 thanh to\u00e1n ti\u1ec1n c\u1ecdc 100.000 VND. Sau khi x\u00e1c nh\u1eadn thanh to\u00e1n, h\u1ec7 th\u1ed1ng s\u1ebd g\u1eedi email x\u00e1c nh\u1eadn \u0111\u1eb7t b\u00e0n.",
       ),
       React.createElement(
         "button",
@@ -346,15 +406,16 @@ export function BookingPage() {
           className: "btn-gold qr-done-btn",
           type: "button",
           onClick: onComplete,
-          disabled: !submitted,
+          disabled: !submitted || confirmingPayment,
         },
-        "Hoàn thành",
+        confirmingPayment ? "\u0110ang x\u1eed l\u00fd..." : "Ho\u00e0n th\u00e0nh",
       ),
       completed
         ? React.createElement(
             "p",
             { className: "success-msg" },
-            "Cảm ơn bạn. Đặt bàn đã được hoàn tất.",
+            confirmationMsg ||
+              "C\u1ea3m \u01a1n b\u1ea1n. \u0110\u1eb7t b\u00e0n \u0111\u00e3 \u0111\u01b0\u1ee3c ho\u00e0n t\u1ea5t.",
           )
         : null,
     ),

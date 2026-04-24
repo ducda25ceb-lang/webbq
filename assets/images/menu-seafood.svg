@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-labelledby="title desc">
+  <title id="title">Seafood BBQ</title>
+  <desc id="desc">Stylized seafood platter illustration for menu cards.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0d2430" />
+      <stop offset="100%" stop-color="#1d5f7b" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)" rx="36" />
+  <circle cx="160" cy="120" r="96" fill="#a0ecff" fill-opacity=".16" />
+  <ellipse cx="400" cy="362" rx="258" ry="136" fill="#0d171d" />
+  <ellipse cx="400" cy="342" rx="232" ry="112" fill="#16323f" stroke="#5aa7c0" stroke-width="8" />
+  <path d="M264 332c40-77 121-114 202-92 49 14 87 49 110 98-41 25-92 42-153 47-63 5-116-8-159-53z" fill="#5cc0c8" />
+  <path d="M270 332c22 21 60 40 96 42-2-31 13-62 44-86 33-26 78-36 129-28" fill="none" stroke="#d8fbff" stroke-width="8" stroke-linecap="round" />
+  <circle cx="488" cy="286" r="10" fill="#f3feff" />
+  <path d="M366 280c20 15 39 18 58 9M313 371c40 18 84 20 130 8" stroke="#d6fbff" stroke-width="8" stroke-linecap="round" opacity=".86" />
+  <text x="70" y="108" fill="#d3f6ff" font-family="Arial, sans-serif" font-size="30" letter-spacing="5">FRESH DAILY</text>
+  <text x="70" y="160" fill="#ecfdff" font-family="Georgia, serif" font-size="64" font-weight="700">Seafood Grill</text>
+  <text x="70" y="516" fill="#cfeef6" font-family="Arial, sans-serif" font-size="28">Butter garlic and ocean sweetness</text>
+</svg>
