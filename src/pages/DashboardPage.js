@@ -24,7 +24,7 @@ function formatBookingRow(row) {
 }
 
 export function DashboardPage() {
-  const { user } = useAuth();
+  const { authBusy, linkGoogleAccount, user } = useAuth();
   const [bookings, setBookings] = React.useState([]);
   const [loading, setLoading] = React.useState(isSupabaseConfigured);
   const [error, setError] = React.useState("");
@@ -38,6 +38,24 @@ export function DashboardPage() {
     (status) => status !== BOOKING_STATUS_CANCELLED,
     [],
   );
+
+  const onLinkGoogleAccount = async () => {
+    if (!linkGoogleAccount) {
+      return;
+    }
+
+    setError("");
+    setActionMsg("");
+
+    const result = await linkGoogleAccount();
+
+    if (!result.ok) {
+      setError(result.message);
+      return;
+    }
+
+    setActionMsg(result.message);
+  };
 
   React.useEffect(() => {
     let active = true;
@@ -195,6 +213,64 @@ export function DashboardPage() {
     "div",
     { className: "container section" },
     React.createElement("h1", null, `Xin ch\u00e0o, ${user?.name || "Kh\u00e1ch"}`),
+    isSupabaseConfigured && user
+      ? React.createElement(
+          "section",
+          { className: "panel account-link-panel" },
+          React.createElement(
+            "div",
+            { className: "account-profile" },
+            user.avatarUrl
+              ? React.createElement("img", {
+                  src: user.avatarUrl,
+                  alt: user.name || "T\u00e0i kho\u1ea3n",
+                })
+              : React.createElement(
+                  "span",
+                  { className: "account-avatar-fallback" },
+                  (user.name || "K").slice(0, 1).toUpperCase(),
+                ),
+            React.createElement(
+              "div",
+              null,
+              React.createElement("h2", null, user.name || "Kh\u00e1ch"),
+              React.createElement("p", { className: "muted" }, user.email),
+            ),
+          ),
+          React.createElement(
+            "div",
+            { className: "account-provider-box" },
+            React.createElement(
+              "span",
+              {
+                className: user.hasGoogleLinked
+                  ? "provider-badge is-linked"
+                  : "provider-badge",
+              },
+              user.hasGoogleLinked
+                ? "Đã liên kết Google"
+                : "Chưa liên kết Google",
+            ),
+            user.hasGoogleLinked
+              ? null
+              : React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    className: "google-auth-btn compact",
+                    onClick: onLinkGoogleAccount,
+                    disabled: authBusy,
+                  },
+                  React.createElement("span", { className: "google-mark" }, "G"),
+                  React.createElement(
+                    "span",
+                    null,
+                    authBusy ? "Đang xử lý..." : "Liên kết Google",
+                  ),
+                ),
+          ),
+        )
+      : null,
     React.createElement(
       "p",
       { className: "muted" },

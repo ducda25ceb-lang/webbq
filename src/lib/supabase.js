@@ -69,13 +69,28 @@ export function toAppUser(supabaseUser) {
     return null;
   }
 
+  const identityProviders = (supabaseUser.identities || [])
+    .map((identity) => identity.provider)
+    .filter(Boolean);
+  const appProviders = supabaseUser.app_metadata?.providers || [];
+  const providers = [...new Set([...appProviders, ...identityProviders])];
+
   return {
     id: supabaseUser.id,
     email: supabaseUser.email,
     name:
+      supabaseUser.user_metadata?.full_name ||
+      supabaseUser.user_metadata?.name ||
       supabaseUser.user_metadata?.display_name ||
       supabaseUser.email?.split("@")[0] ||
       "Khách",
+    avatarUrl:
+      supabaseUser.user_metadata?.avatar_url ||
+      supabaseUser.user_metadata?.picture ||
+      "",
+    authProvider: supabaseUser.app_metadata?.provider || providers[0] || "email",
+    providers,
+    hasGoogleLinked: providers.includes("google"),
     role: supabaseUser.user_metadata?.role || "customer",
   };
 }

@@ -1,0 +1,9 @@
+{
+  "name": "ember-bbq-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "python -m http.server 5500 --bind 127.0.0.1",
+    "start": "npm run dev"
+  }
+}

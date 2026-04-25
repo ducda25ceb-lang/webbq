@@ -31,7 +31,8 @@ export function LoginPage() {
   const location = useLocation();
   const signupEnabled = !isSupabaseConfigured || !authSettings.disableSignup;
   const showEmailAuth = !isSupabaseConfigured || authSettings.emailEnabled;
-  const showGoogleAuth = isSupabaseConfigured && authSettings.googleEnabled;
+  const showGoogleAuth = isSupabaseConfigured;
+  const googleEnabled = isSupabaseConfigured && authSettings.googleEnabled;
   const isWorking = loading || authBusy;
 
   useEffect(() => {
@@ -92,21 +93,13 @@ export function LoginPage() {
   const heading = mode === "signup" ? "Đăng ký tài khoản" : "Đăng nhập";
   const introText = isSupabaseConfigured
     ? mode === "signup"
-      ? showGoogleAuth
-        ? "Tạo tài khoản bằng email hoặc Google để lưu lịch sử đặt bàn trên Supabase."
-        : "Tạo tài khoản bằng email để lưu lịch sử đặt bàn trên Supabase."
-      : showGoogleAuth
-        ? "Đăng nhập bằng email hoặc Google để dùng lại tài khoản đã lưu."
-        : "Đăng nhập bằng email để dùng lại tài khoản đã lưu."
+      ? "Tạo tài khoản bằng Google để app tự lưu lịch sử đặt bàn trên Supabase."
+      : "Đăng nhập bằng Google để dùng lại đúng tài khoản và lịch sử đặt bàn đã lưu."
     : "Đăng nhập mock để vào dashboard và xem lịch sử đặt bàn.";
   const helperText = isSupabaseConfigured
-    ? mode === "signup"
-      ? authSettings.requiresEmailConfirmation
-        ? "Project này yêu cầu xác thực email sau khi đăng ký. Hãy kiểm tra hộp thư trước khi đăng nhập lần đầu."
-        : "Sau khi đăng ký xong, phiên đăng nhập sẽ được lưu trực tiếp trên trình duyệt."
-      : showGoogleAuth
-        ? "Google chỉ xuất hiện khi provider đó đang được bật trong Supabase settings."
-        : "Project hiện chỉ bật đăng nhập bằng email."
+    ? googleEnabled
+      ? "Bạn sẽ được chuyển sang Google để xác thực, app không nhận hay lưu mật khẩu Google."
+      : "Cần bật Google provider trong Supabase Auth để dùng nút Google."
     : `Tài khoản demo: ${demoUser.username} | Mật khẩu: ${demoUser.password}`;
   const submitLabel = isSupabaseConfigured
     ? mode === "signup"
@@ -147,6 +140,16 @@ export function LoginPage() {
                   "Đăng ký",
                 )
               : null,
+          )
+        : null,
+      feedback.text
+        ? React.createElement(
+            "p",
+            {
+              className:
+                feedback.type === "success" ? "success-msg" : "error-msg",
+            },
+            feedback.text,
           )
         : null,
       showEmailAuth
@@ -213,12 +216,6 @@ export function LoginPage() {
                       setForm((prev) => ({ ...prev, password: e.target.value })),
                   }),
                 ),
-            feedback.text && feedback.type === "error"
-              ? React.createElement("p", { className: "error-msg" }, feedback.text)
-              : null,
-            feedback.text && feedback.type === "success"
-              ? React.createElement("p", { className: "success-msg" }, feedback.text)
-              : null,
             React.createElement(
               "button",
               { className: "btn-gold", type: "submit", disabled: isWorking },
@@ -232,14 +229,34 @@ export function LoginPage() {
           ),
       showGoogleAuth
         ? React.createElement(
-            "button",
-            {
-              className: "btn-outline auth-provider-btn",
-              type: "button",
-              onClick: onGoogleClick,
-              disabled: isWorking,
-            },
-            isWorking ? "Đang xử lý..." : "Tiếp tục với Google",
+            React.Fragment,
+            null,
+            showEmailAuth
+              ? React.createElement(
+                  "div",
+                  { className: "auth-divider" },
+                  React.createElement("span", null, "hoặc dùng Google"),
+                )
+              : null,
+            React.createElement(
+              "button",
+              {
+                className: "google-auth-btn",
+                type: "button",
+                onClick: onGoogleClick,
+                disabled: isWorking,
+              },
+              React.createElement("span", { className: "google-mark" }, "G"),
+              React.createElement(
+                "span",
+                null,
+                isWorking
+                  ? "Đang xử lý..."
+                  : mode === "signup"
+                    ? "Đăng ký với Google"
+                    : "Tiếp tục với Google",
+              ),
+            ),
           )
         : null,
     ),

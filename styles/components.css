@@ -227,6 +227,73 @@
   margin-top: 12px;
 }
 
+.google-auth-btn {
+  width: 100%;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  background: #f8f5ef;
+  color: #151515;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.google-auth-btn:hover {
+  transform: translateY(-2px);
+  border-color: rgba(226, 187, 111, 0.65);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.32);
+}
+
+.google-auth-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.google-auth-btn.compact {
+  width: auto;
+  min-height: 40px;
+  padding: 8px 14px;
+}
+
+.google-mark {
+  width: 24px;
+  height: 24px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff;
+  color: #4285f4;
+  font-family: Arial, sans-serif;
+  font-weight: 800;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
 .comment-form input,
 .comment-form textarea,
 .booking-form input {
@@ -289,6 +356,7 @@
 @media (hover: none) and (pointer: coarse) {
   .btn-gold:hover,
   .btn-outline:hover,
+  .google-auth-btn:hover,
   .dish-card:hover,
   .nav-link:hover {
     transform: none;

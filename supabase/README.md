@@ -56,6 +56,22 @@ The frontend expects these tables:
 - Contact requests are insertable by everyone and readable by authenticated users.
 - The frontend already falls back to mock data when Supabase is not configured.
 
+## Google Login And Account Linking
+
+The frontend uses Supabase OAuth for Google login. Users do not type their Google email or password into the app. They click the Google button, complete Google's consent screen, and Supabase creates or reuses the same auth user.
+
+To enable it:
+
+1. In Supabase Dashboard, open Authentication > Providers.
+2. Enable Google and paste the Google OAuth Client ID and Client Secret.
+3. In Google Cloud Console, add this authorized redirect URI:
+   `https://YOUR_PROJECT_ID.supabase.co/auth/v1/callback`
+4. In Supabase Authentication > URL Configuration, add your local and deployed site URLs.
+   Example local URL: `http://localhost:3000`
+5. Return to the app and use "Đăng ký với Google" or "Tiếp tục với Google".
+
+If a user already has an email/password account, the dashboard shows a "Liên kết Google" button. That calls `supabase.auth.linkIdentity({ provider: "google" })` so the same Supabase user can sign in with Google later.
+
 ## Booking Confirmation Email
 
 The QR completion button now calls the `send-booking-confirmation` Edge Function.

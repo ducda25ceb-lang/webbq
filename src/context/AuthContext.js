@@ -50,6 +50,10 @@ function mapAuthErrorMessage(message, mode) {
   return "Không thể đăng nhập lúc này. Vui lòng thử lại.";
 }
 
+function getOAuthRedirectTo() {
+  return `${window.location.origin}${window.location.pathname}`;
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     if (isSupabaseConfigured) {
@@ -249,18 +253,21 @@ export function AuthProvider({ children }) {
     if (!authSettings.googleEnabled) {
       return {
         ok: false,
-        message: "Đăng nhập bằng Google hiện chưa được bật trên Supabase project này.",
+        message:
+          "Đăng nhập bằng Google chưa được bật trong Supabase. Hãy bật Google provider rồi thử lại.",
       };
     }
 
-    const redirectTo = `${window.location.origin}${window.location.pathname}`;
     setAuthBusy(true);
 
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo,
+          redirectTo: getOAuthRedirectTo(),
+          queryParams: {
+            prompt: "select_account",
+          },
         },
       });
 
@@ -272,6 +279,66 @@ export function AuthProvider({ children }) {
       }
 
       return { ok: true };
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const linkGoogleAccount = async () => {
+    if (!isSupabaseConfigured) {
+      return {
+        ok: false,
+        message: "Tính năng liên kết Google cần cấu hình Supabase trước.",
+      };
+    }
+
+    if (!user) {
+      return {
+        ok: false,
+        message: "Bạn cần đăng nhập trước khi liên kết Google.",
+      };
+    }
+
+    if (user.hasGoogleLinked) {
+      return {
+        ok: true,
+        message: "Tài khoản này đã liên kết với Google.",
+      };
+    }
+
+    if (!authSettings.googleEnabled) {
+      return {
+        ok: false,
+        message:
+          "Chưa thể liên kết Google vì Supabase project chưa bật Google provider.",
+      };
+    }
+
+    setAuthBusy(true);
+
+    try {
+      const { error } = await supabase.auth.linkIdentity({
+        provider: "google",
+        options: {
+          redirectTo: getOAuthRedirectTo(),
+          queryParams: {
+            prompt: "select_account",
+          },
+        },
+      });
+
+      if (error) {
+        return {
+          ok: false,
+          message:
+            "Không thể mở luồng liên kết Google lúc này. Vui lòng thử lại.",
+        };
+      }
+
+      return {
+        ok: true,
+        message: "Đang chuyển đến Google để liên kết tài khoản.",
+      };
     } finally {
       setAuthBusy(false);
     }
@@ -292,6 +359,7 @@ export function AuthProvider({ children }) {
       user,
       login,
       signInWithGoogle,
+      linkGoogleAccount,
       logout,
       demoUser: DEMO_USER,
       isSupabaseConfigured,

@@ -27,17 +27,20 @@ Because this project uses ES modules in browser, run it with a local static serv
 
 Example with VS Code Live Server:
 
-1. Open the project folder in VS Code.
-2. Start Live Server from `index.html`.
-3. Open the provided localhost URL.
+1. Open `D:\frontend-bbq-test` as the VS Code folder.
+2. Right-click `index.html`.
+3. Choose `Open with Live Server`.
+4. Open `http://127.0.0.1:5500/#/dang-nhap?mode=login`.
 
-Example with Node static server:
+The workspace includes `.vscode/settings.json`, so Live Server uses the project root and port `5500`.
+
+Example with the built-in Python static server:
 
 ```bash
-npx serve .
+npm run dev
 ```
 
-Then open the local URL shown in terminal.
+Then open `http://127.0.0.1:5500/`.
 
 ## Supabase Setup
 
