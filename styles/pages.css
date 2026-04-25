@@ -702,16 +702,11 @@
   }
 
   .drink-carousel-viewport {
-    overflow-x: auto;
-    padding-bottom: 6px;
-    -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x proximity;
+    overflow: hidden;
   }
 
   .drink-carousel-track {
-    animation: none;
     width: max-content;
-    padding-bottom: 2px;
   }
 
   .drink-card {

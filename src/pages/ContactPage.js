@@ -100,13 +100,6 @@ export function ContactPage() {
         "article",
         { className: "panel" },
         React.createElement("h3", null, "Gửi yêu cầu"),
-        isSupabaseConfigured
-          ? React.createElement(
-              "p",
-              { className: "muted" },
-              "Form này sẽ lưu vào bảng contact_requests trong Supabase.",
-            )
-          : null,
         React.createElement(
           "form",
           { className: "comment-form", onSubmit: handleSubmit },
