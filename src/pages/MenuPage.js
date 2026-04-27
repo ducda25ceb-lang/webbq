@@ -19,6 +19,9 @@ const fallbackDishImage =
   "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1200&auto=format&fit=crop";
 
 const INITIAL_VISIBLE_ITEMS = 8;
+const COMMENT_PAGE_SIZE = 4;
+const MAX_RATING = 5;
+const DEFAULT_RATING = 5;
 
 const formatPrice = (price) => `${price} VND`;
 
@@ -28,6 +31,27 @@ const normalizeText = (value) =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/đ/g, "d");
+
+const normalizeRating = (value) => {
+  const rating = Number(value);
+  if (!Number.isFinite(rating)) {
+    return DEFAULT_RATING;
+  }
+
+  return Math.min(MAX_RATING, Math.max(1, Math.round(rating)));
+};
+
+const formatRatingStars = (rating) => {
+  const safeRating = normalizeRating(rating);
+  return `${"★".repeat(safeRating)}${"☆".repeat(MAX_RATING - safeRating)}`;
+};
+
+const mapCommentRow = (row, fallbackRating = DEFAULT_RATING) => ({
+  id: row.id,
+  name: row.name,
+  text: row.comment_text,
+  rating: normalizeRating(row.rating ?? fallbackRating),
+});
 
 export function MenuPage() {
   useScrollReveal();
@@ -40,14 +64,21 @@ export function MenuPage() {
       id: 1,
       name: "Gia Bảo",
       text: "Sốt ướp đậm vị, thịt mềm và phục vụ rất tốt.",
+      rating: 5,
     },
     {
       id: 2,
       name: "Thảo Nhi",
       text: "Không gian đẹp, nên đi buổi tối để chill hơn.",
+      rating: 4,
     },
   ]);
-  const [form, setForm] = useState({ name: "", text: "" });
+  const [commentPage, setCommentPage] = useState(1);
+  const [form, setForm] = useState({
+    name: "",
+    text: "",
+    rating: DEFAULT_RATING,
+  });
   const [commentError, setCommentError] = useState("");
   const [commentSaving, setCommentSaving] = useState(false);
 
@@ -69,11 +100,21 @@ export function MenuPage() {
       }
 
       try {
-        const { data, error } = await supabase
+        let { data, error } = await supabase
           .from("menu_comments")
-          .select("id, name, comment_text, created_at")
+          .select("id, name, comment_text, rating, created_at")
           .order("created_at", { ascending: false })
           .limit(30);
+
+        if (error && error.message?.toLowerCase().includes("rating")) {
+          const fallbackResult = await supabase
+            .from("menu_comments")
+            .select("id, name, comment_text, created_at")
+            .order("created_at", { ascending: false })
+            .limit(30);
+          data = fallbackResult.data;
+          error = fallbackResult.error;
+        }
 
         if (!activeRequest) {
           return;
@@ -85,13 +126,8 @@ export function MenuPage() {
         }
 
         setCommentError("");
-        setComments(
-          (data || []).map((row) => ({
-            id: row.id,
-            name: row.name,
-            text: row.comment_text,
-          })),
-        );
+        setComments((data || []).map((row) => mapCommentRow(row)));
+        setCommentPage(1);
       } catch {
         if (!activeRequest) {
           return;
@@ -180,11 +216,27 @@ export function MenuPage() {
   );
 
   const carouselItems = useMemo(() => [...drinkSpecials, ...drinkSpecials], []);
+  const totalCommentPages = Math.max(
+    1,
+    Math.ceil(comments.length / COMMENT_PAGE_SIZE),
+  );
+  const currentCommentPage = Math.min(commentPage, totalCommentPages);
+  const visibleComments = useMemo(() => {
+    const startIndex = (currentCommentPage - 1) * COMMENT_PAGE_SIZE;
+    return comments.slice(startIndex, startIndex + COMMENT_PAGE_SIZE);
+  }, [comments, currentCommentPage]);
+
+  React.useEffect(() => {
+    if (commentPage > totalCommentPages) {
+      setCommentPage(totalCommentPages);
+    }
+  }, [commentPage, totalCommentPages]);
 
   const submitComment = async (e) => {
     e.preventDefault();
     const name = form.name.trim();
     const text = form.text.trim();
+    const rating = normalizeRating(form.rating);
 
     if (!name || !text) {
       setCommentError("Bạn cần nhập tên và nội dung nhận xét.");
@@ -194,26 +246,38 @@ export function MenuPage() {
     if (isSupabaseConfigured) {
       setCommentSaving(true);
       try {
-        const { data, error } = await supabase
+        let { data, error } = await supabase
           .from("menu_comments")
           .insert({
             name,
             comment_text: text,
+            rating,
           })
-          .select("id, name, comment_text")
+          .select("id, name, comment_text, rating")
           .single();
+
+        if (error && error.message?.toLowerCase().includes("rating")) {
+          const fallbackResult = await supabase
+            .from("menu_comments")
+            .insert({
+              name,
+              comment_text: text,
+            })
+            .select("id, name, comment_text")
+            .single();
+          data = fallbackResult.data;
+          error = fallbackResult.error;
+        }
 
         if (error) {
           setCommentError("Không thể gửi nhận xét. Vui lòng thử lại.");
           return;
         }
 
-        setComments((prev) => [
-          { id: data.id, name: data.name, text: data.comment_text },
-          ...prev,
-        ]);
+        setComments((prev) => [mapCommentRow(data, rating), ...prev]);
+        setCommentPage(1);
         setCommentError("");
-        setForm({ name: "", text: "" });
+        setForm({ name: "", text: "", rating: DEFAULT_RATING });
         return;
       } catch {
         setCommentError("Không thể kết nối database để gửi nhận xét.");
@@ -224,11 +288,12 @@ export function MenuPage() {
     }
 
     setComments((prev) => [
-      { id: Date.now(), name, text },
+      { id: Date.now(), name, text, rating },
       ...prev,
     ]);
+    setCommentPage(1);
     setCommentError("");
-    setForm({ name: "", text: "" });
+    setForm({ name: "", text: "", rating: DEFAULT_RATING });
   };
 
   const handleImageError = (e) => {
@@ -458,13 +523,6 @@ export function MenuPage() {
       "section",
       { className: "chat-box reveal" },
       React.createElement("h2", null, "Khung chat nhận xét"),
-      isSupabaseConfigured
-        ? React.createElement(
-            "p",
-            { className: "muted" },
-            "Nhận xét sẽ được lưu vào Supabase để hiển thị cho các lượt truy cập sau.",
-          )
-        : null,
       React.createElement(
         "form",
         { className: "comment-form", onSubmit: submitComment },
@@ -479,6 +537,35 @@ export function MenuPage() {
           placeholder: "Bạn cảm nhận món nào ngon nhất?",
           onChange: (e) => setForm((p) => ({ ...p, text: e.target.value })),
         }),
+        React.createElement(
+          "div",
+          { className: "rating-field" },
+          React.createElement("span", { className: "rating-label" }, "Đánh giá món ăn"),
+          React.createElement(
+            "div",
+            { className: "rating-stars", role: "radiogroup", "aria-label": "Chọn số sao" },
+            Array.from({ length: MAX_RATING }).map((_, index) => {
+              const ratingValue = index + 1;
+              return React.createElement(
+                "button",
+                {
+                  key: ratingValue,
+                  type: "button",
+                  className:
+                    ratingValue <= form.rating
+                      ? "rating-star-btn active"
+                      : "rating-star-btn",
+                  role: "radio",
+                  "aria-checked": ratingValue === form.rating,
+                  "aria-label": `${ratingValue} trên ${MAX_RATING} sao`,
+                  onClick: () =>
+                    setForm((p) => ({ ...p, rating: ratingValue })),
+                },
+                "★",
+              );
+            }),
+          ),
+        ),
         React.createElement(
           "button",
           {
@@ -495,15 +582,56 @@ export function MenuPage() {
       React.createElement(
         "div",
         { className: "comment-list" },
-        comments.map((c) =>
+        visibleComments.map((c) =>
           React.createElement(
             "article",
             { key: c.id, className: "comment-item" },
-            React.createElement("strong", null, c.name),
+            React.createElement(
+              "div",
+              { className: "comment-author-row" },
+              React.createElement(
+                "span",
+                { className: "comment-avatar", "aria-hidden": "true" },
+                c.name.slice(0, 1).toUpperCase(),
+              ),
+              React.createElement("strong", null, c.name),
+              React.createElement(
+                "span",
+                {
+                  className: "comment-rating",
+                  "aria-label": `${normalizeRating(c.rating)} trên ${MAX_RATING} sao`,
+                },
+                formatRatingStars(c.rating),
+              ),
+            ),
             React.createElement("p", null, c.text),
           ),
         ),
       ),
+      totalCommentPages > 1
+        ? React.createElement(
+            "div",
+            { className: "comment-pagination", "aria-label": "Phân trang nhận xét" },
+            Array.from({ length: totalCommentPages }).map((_, index) => {
+              const pageNumber = index + 1;
+              return React.createElement(
+                "button",
+                {
+                  key: pageNumber,
+                  type: "button",
+                  className:
+                    pageNumber === currentCommentPage
+                      ? "comment-page-btn active"
+                      : "comment-page-btn",
+                  "aria-current":
+                    pageNumber === currentCommentPage ? "page" : undefined,
+                  onClick: () => setCommentPage(pageNumber),
+                },
+                pageNumber,
+              );
+            }),
+          )
+        : null,
     ),
   );
 }

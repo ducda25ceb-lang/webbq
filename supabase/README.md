@@ -8,6 +8,7 @@ Use this folder to create the backend for Ember BBQ.
 - `migrations/0002_booking_slot_conflict.sql`: blocks duplicate time slots for the same date.
 - `migrations/0003_booking_confirmation_email.sql`: adds timestamps for the post-QR confirmation email flow.
 - `migrations/0004_booking_cancellation.sql`: releases booked slots again after a customer cancellation with lost deposit.
+- `migrations/0005_menu_comment_rating.sql`: adds a 1-5 star rating to menu comments.
 - `functions/send-booking-confirmation`: confirms a booking and sends the confirmation email.
 
 ## How to use
@@ -41,6 +42,7 @@ The frontend expects these tables:
 - `menu_comments`
   - `name`
   - `comment_text`
+  - `rating`
   - `created_at`
 - `contact_requests`
   - `name`
