@@ -64,6 +64,7 @@ export function BookingPage() {
   const [saving, setSaving] = useState(false);
   const [confirmationMsg, setConfirmationMsg] = useState("");
   const [confirmingPayment, setConfirmingPayment] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [bookingCode, setBookingCode] = useState("");
   const [form, setForm] = useState({
     name: "",
@@ -134,6 +135,18 @@ export function BookingPage() {
       active = false;
     };
   }, [form.date, today]);
+
+  useEffect(() => {
+    if (!showSuccessPopup) {
+      return undefined;
+    }
+
+    const popupTimer = setTimeout(() => {
+      setShowSuccessPopup(false);
+    }, 3000);
+
+    return () => clearTimeout(popupTimer);
+  }, [showSuccessPopup]);
 
   const onSubmit = async (event) => {
     event.preventDefault();
@@ -241,6 +254,7 @@ export function BookingPage() {
 
     if (!isSupabaseConfigured) {
       setCompleted(true);
+      setShowSuccessPopup(true);
       setConfirmationMsg(
         "\u0110\u00e3 x\u00e1c nh\u1eadn \u0111\u1eb7t b\u00e0n. Email x\u00e1c nh\u1eadn ch\u1ec9 ho\u1ea1t \u0111\u1ed9ng khi Supabase \u0111\u01b0\u1ee3c c\u1ea5u h\u00ecnh.",
       );
@@ -258,6 +272,7 @@ export function BookingPage() {
       });
 
       setCompleted(true);
+      setShowSuccessPopup(true);
       setConfirmationMsg(result.message);
     } catch (error) {
       const message =
@@ -419,5 +434,40 @@ export function BookingPage() {
           )
         : null,
     ),
+    showSuccessPopup
+      ? React.createElement(
+          "div",
+          {
+            className: "booking-success-popup",
+            role: "status",
+            "aria-live": "polite",
+          },
+          React.createElement(
+            "div",
+            { className: "booking-success-card" },
+            React.createElement(
+              "div",
+              { className: "booking-success-check" },
+              React.createElement(
+                "svg",
+                {
+                  viewBox: "0 0 120 120",
+                  "aria-hidden": "true",
+                  focusable: "false",
+                },
+                React.createElement("circle", {
+                  cx: "60",
+                  cy: "60",
+                  r: "48",
+                }),
+                React.createElement("path", {
+                  d: "M36 61 L54 78 L86 40",
+                }),
+              ),
+            ),
+            React.createElement("p", null, "success"),
+          ),
+        )
+      : null,
   );
 }

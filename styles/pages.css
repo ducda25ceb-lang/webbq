@@ -58,6 +58,31 @@
   border-radius: var(--radius);
   padding: 18px;
   background: rgba(255, 255, 255, 0.03);
+  font-family: "Times New Roman", Times, serif;
+}
+
+.stat-card h3 {
+  margin: 0 0 18px;
+  color: var(--text);
+  font-family: "Times New Roman", Times, serif;
+  font-size: 1.6rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.stat-card p {
+  margin: 0;
+  color: var(--text);
+  font-family: "Times New Roman", Times, serif;
+  font-size: 1.28rem;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.stat-number {
+  display: inline-block;
+  min-width: 3ch;
+  font-variant-numeric: tabular-nums;
 }
 
 .cta-section {
@@ -233,6 +258,64 @@
   margin-top: 10px;
 }
 
+.menu-results {
+  margin: 0 0 26px;
+}
+
+.menu-results-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.menu-results-heading h2 {
+  margin: 0;
+  color: var(--gold-strong);
+  font-size: clamp(1.35rem, 2vw, 1.8rem);
+}
+
+.menu-result-count {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.menu-reset-btn {
+  flex: 0 0 auto;
+}
+
+.menu-more-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.menu-more-btn {
+  min-width: 160px;
+  min-height: 44px;
+  padding: 10px 22px;
+  border: 1px solid rgba(226, 187, 111, 0.72);
+  border-radius: 999px;
+  background: rgba(201, 163, 91, 0.08);
+  color: var(--gold-strong);
+  cursor: pointer;
+  font-weight: 800;
+  letter-spacing: 0;
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    color 0.25s ease,
+    transform 0.25s ease;
+}
+
+.menu-more-btn:hover {
+  background: rgba(201, 163, 91, 0.2);
+  border-color: rgba(255, 222, 154, 0.92);
+  color: var(--text);
+  transform: translateY(-2px);
+}
+
 .menu-hot-section {
   margin: 0 0 22px;
   border: 1px solid var(--line);
@@ -267,7 +350,7 @@
   font-size: 1rem;
 }
 
-.hot-item p {
+.hot-item .menu-price {
   margin: 0;
   color: var(--gold-strong);
 }
@@ -328,7 +411,7 @@
   font-size: 1rem;
 }
 
-.drink-body p {
+.drink-body .menu-price {
   margin: 0;
   color: var(--gold-strong);
   font-weight: 700;
@@ -444,6 +527,59 @@
 .success-msg {
   color: #95f19a;
   margin-top: 14px;
+}
+
+.booking-success-popup {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.55);
+  animation: successOverlayIn 0.18s ease-out;
+}
+
+.booking-success-card {
+  width: min(240px, 82vw);
+  min-height: 190px;
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  padding: 24px 20px;
+  border: 1px solid rgba(149, 241, 154, 0.5);
+  border-radius: 20px;
+  background: #050706;
+  color: #95f19a;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.38);
+}
+
+.booking-success-check {
+  width: 110px;
+  height: 110px;
+}
+
+.booking-success-check svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.booking-success-check circle,
+.booking-success-check path {
+  fill: none;
+  stroke: #35e66f;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 7;
+}
+
+.booking-success-card p {
+  margin: 0;
+  color: #95f19a;
+  font-family: "Times New Roman", Times, serif;
+  font-size: 1.55rem;
+  line-height: 1;
 }
 
 .contact-grid {
@@ -713,6 +849,11 @@
     scroll-snap-align: start;
   }
 
+  .menu-results-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .home-video-sub {
     margin-bottom: 14px;
   }
@@ -760,5 +901,15 @@
 
   to {
     transform: translateX(-50%);
+  }
+}
+
+@keyframes successOverlayIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
   }
 }

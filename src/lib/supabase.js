@@ -30,6 +30,27 @@ export const supabase = isSupabaseConfigured
     })
   : null;
 
+async function readFunctionErrorMessage(error) {
+  if (!error) {
+    return "";
+  }
+
+  if (error.context instanceof Response) {
+    try {
+      const payload = await error.context.clone().json();
+      return payload?.error || payload?.message || "";
+    } catch {
+      try {
+        return await error.context.clone().text();
+      } catch {
+        return "";
+      }
+    }
+  }
+
+  return error.message || "";
+}
+
 function mapAuthSettings(payload) {
   return {
     disableSignup: Boolean(payload?.disable_signup),
@@ -137,7 +158,8 @@ export async function finalizeBookingPayment({ bookingCode, userId }) {
       });
 
     if (functionError) {
-      throw functionError;
+      const detail = await readFunctionErrorMessage(functionError);
+      throw new Error(detail || functionError.message);
     }
 
     return {
@@ -148,12 +170,16 @@ export async function finalizeBookingPayment({ bookingCode, userId }) {
         "Email x\u00e1c nh\u1eadn \u0111\u1eb7t b\u00e0n \u0111\u00e3 \u0111\u01b0\u1ee3c g\u1eedi th\u00e0nh c\u00f4ng.",
     };
   } catch (emailError) {
+    const detail = emailError?.message
+      ? ` Lỗi email: ${emailError.message}`
+      : "";
+
     return {
       ok: true,
       emailSent: false,
       emailError,
       message:
-        "\u0110\u01a1n \u0111\u1eb7t b\u00e0n \u0111\u00e3 \u0111\u01b0\u1ee3c x\u00e1c nh\u1eadn, nh\u01b0ng ch\u01b0a g\u1eedi \u0111\u01b0\u1ee3c email x\u00e1c nh\u1eadn l\u00fac n\u00e0y.",
+        `\u0110\u01a1n \u0111\u1eb7t b\u00e0n \u0111\u00e3 \u0111\u01b0\u1ee3c x\u00e1c nh\u1eadn, nh\u01b0ng ch\u01b0a g\u1eedi \u0111\u01b0\u1ee3c email x\u00e1c nh\u1eadn l\u00fac n\u00e0y.${detail}`,
     };
   }
 }

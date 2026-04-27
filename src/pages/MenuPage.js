@@ -18,11 +18,23 @@ const quickTags = [
 const fallbackDishImage =
   "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1200&auto=format&fit=crop";
 
+const INITIAL_VISIBLE_ITEMS = 8;
+
+const formatPrice = (price) => `${price} VND`;
+
+const normalizeText = (value) =>
+  value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d");
+
 export function MenuPage() {
   useScrollReveal();
   const [active, setActive] = useState("all");
   const [searchText, setSearchText] = useState("");
   const [quickTag, setQuickTag] = useState("all");
+  const [showAllItems, setShowAllItems] = useState(false);
   const [comments, setComments] = useState([
     {
       id: 1,
@@ -38,6 +50,15 @@ export function MenuPage() {
   const [form, setForm] = useState({ name: "", text: "" });
   const [commentError, setCommentError] = useState("");
   const [commentSaving, setCommentSaving] = useState(false);
+
+  const categoryLabel = useMemo(
+    () =>
+      categories.reduce((acc, cat) => {
+        acc[cat.key] = cat.label;
+        return acc;
+      }, {}),
+    [],
+  );
 
   React.useEffect(() => {
     let activeRequest = true;
@@ -94,8 +115,12 @@ export function MenuPage() {
         : featuredDishes.filter((d) => d.category === active);
 
     if (searchText.trim()) {
-      const keyword = searchText.trim().toLowerCase();
-      result = result.filter((d) => d.name.toLowerCase().includes(keyword));
+      const keyword = normalizeText(searchText.trim());
+      result = result.filter((d) =>
+        normalizeText(`${d.name} ${categoryLabel[d.category]}`).includes(
+          keyword,
+        ),
+      );
     }
 
     if (quickTag === "popular") {
@@ -113,7 +138,40 @@ export function MenuPage() {
     }
 
     return result;
+  }, [active, categoryLabel, quickTag, searchText]);
+
+  React.useEffect(() => {
+    setShowAllItems(false);
   }, [active, quickTag, searchText]);
+
+  const activeFilterText = useMemo(() => {
+    const filters = [];
+
+    if (active !== "all") {
+      filters.push(categoryLabel[active]);
+    }
+
+    if (quickTag !== "all") {
+      filters.push(quickTags.find((tag) => tag.key === quickTag)?.label);
+    }
+
+    if (searchText.trim()) {
+      filters.push(`"${searchText.trim()}"`);
+    }
+
+    return filters.filter(Boolean).join(" + ");
+  }, [active, categoryLabel, quickTag, searchText]);
+
+  const resetFilters = () => {
+    setActive("all");
+    setQuickTag("all");
+    setSearchText("");
+  };
+
+  const visibleItems = showAllItems
+    ? items
+    : items.slice(0, INITIAL_VISIBLE_ITEMS);
+  const hasHiddenItems = items.length > INITIAL_VISIBLE_ITEMS;
 
   const hotItems = useMemo(
     () =>
@@ -191,7 +249,9 @@ export function MenuPage() {
           "button",
           {
             key: cat.key,
+            type: "button",
             className: active === cat.key ? "chip active" : "chip",
+            "aria-pressed": active === cat.key,
             onClick: () => setActive(cat.key),
           },
           cat.label,
@@ -217,12 +277,97 @@ export function MenuPage() {
               key: tag.key,
               type: "button",
               className: quickTag === tag.key ? "chip active" : "chip",
+              "aria-pressed": quickTag === tag.key,
               onClick: () => setQuickTag(tag.key),
             },
             tag.label,
           ),
         ),
       ),
+    ),
+    React.createElement(
+      "section",
+      { className: "menu-results reveal", "aria-live": "polite" },
+      React.createElement(
+        "div",
+        { className: "menu-results-heading" },
+        React.createElement(
+          "div",
+          null,
+          React.createElement("h2", null, "Kết Quả Thực Đơn"),
+          React.createElement(
+            "p",
+            { className: "menu-result-count" },
+            activeFilterText
+              ? `Đang lọc: ${activeFilterText} - hiển thị ${visibleItems.length}/${items.length} món`
+              : `Tất cả món - hiển thị ${visibleItems.length}/${items.length} món`,
+          ),
+        ),
+        active !== "all" || quickTag !== "all" || searchText.trim()
+          ? React.createElement(
+              "button",
+              {
+                className: "chip menu-reset-btn",
+                type: "button",
+                onClick: resetFilters,
+              },
+              "Xóa lọc",
+            )
+          : null,
+      ),
+      React.createElement(
+        "div",
+        { className: "cards-grid" },
+        items.length
+          ? visibleItems.map((dish) =>
+              React.createElement(
+                "article",
+                { className: "dish-card", key: dish.id },
+                React.createElement("img", {
+                  src: dish.image,
+                  alt: dish.name,
+                  loading: "lazy",
+                  onError: handleImageError,
+                }),
+                React.createElement(
+                  "div",
+                  { className: "dish-body" },
+                  React.createElement("h3", null, dish.name),
+                  React.createElement(
+                    "p",
+                    { className: "dish-desc" },
+                    dish.description,
+                  ),
+                  React.createElement(
+                    "p",
+                    { className: "menu-price" },
+                    formatPrice(dish.price),
+                  ),
+                ),
+              ),
+            )
+          : React.createElement(
+              "p",
+              { className: "empty-note" },
+              "Không tìm thấy món phù hợp. Bạn thử đổi từ khóa hoặc chọn tag khác nhé.",
+            ),
+      ),
+      hasHiddenItems
+        ? React.createElement(
+            "div",
+            { className: "menu-more-wrap" },
+            React.createElement(
+              "button",
+              {
+                className: "menu-more-btn",
+                type: "button",
+                onClick: () => setShowAllItems((prev) => !prev),
+                "aria-expanded": showAllItems,
+              },
+              showAllItems ? "-THU GỌN-" : "-XEM THÊM-",
+            ),
+          )
+        : null,
     ),
     React.createElement(
       "section",
@@ -243,8 +388,13 @@ export function MenuPage() {
             React.createElement("h3", null, dish.name),
             React.createElement(
               "p",
-              null,
-              `${dish.price.toLocaleString("vi-VN")} VND`,
+              { className: "hot-desc" },
+              dish.description,
+            ),
+            React.createElement(
+              "p",
+              { className: "menu-price" },
+              formatPrice(dish.price),
             ),
           ),
         ),
@@ -290,46 +440,19 @@ export function MenuPage() {
                 React.createElement("h3", null, drink.name),
                 React.createElement(
                   "p",
-                  null,
-                  `${drink.price.toLocaleString("vi-VN")} VND`,
+                  { className: "drink-desc" },
+                  drink.description,
+                ),
+                React.createElement(
+                  "p",
+                  { className: "menu-price" },
+                  formatPrice(drink.price),
                 ),
               ),
             ),
           ),
         ),
       ),
-    ),
-    React.createElement(
-      "div",
-      { className: "cards-grid reveal" },
-      items.length
-        ? items.map((dish) =>
-            React.createElement(
-              "article",
-              { className: "dish-card", key: dish.id },
-              React.createElement("img", {
-                src: dish.image,
-                alt: dish.name,
-                loading: "lazy",
-                onError: handleImageError,
-              }),
-              React.createElement(
-                "div",
-                { className: "dish-body" },
-                React.createElement("h3", null, dish.name),
-                React.createElement(
-                  "p",
-                  null,
-                  `${dish.price.toLocaleString("vi-VN")} VND`,
-                ),
-              ),
-            ),
-          )
-        : React.createElement(
-            "p",
-            { className: "empty-note" },
-            "Không tìm thấy món phù hợp. Bạn thử đổi từ khóa hoặc chọn tag khác nhé.",
-          ),
     ),
     React.createElement(
       "section",

@@ -7,6 +7,102 @@ import { useDevicePreferences } from "../components/useDevicePreferences.js";
 const fallbackDishImage =
   "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1200&auto=format&fit=crop";
 
+const formatPrice = (price) => `${price} VND`;
+
+function parseStatValue(value) {
+  const match = String(value).match(/^([\d\s]+)(.*)$/);
+
+  if (!match) {
+    return { target: 0, suffix: value, useThousands: false };
+  }
+
+  const rawNumber = match[1];
+
+  return {
+    target: Number(rawNumber.replace(/\s/g, "")),
+    suffix: match[2],
+    useThousands: rawNumber.includes(" "),
+  };
+}
+
+function formatStatNumber(value, useThousands) {
+  if (!useThousands) {
+    return String(value);
+  }
+
+  return value.toLocaleString("fr-FR").replace(/\u202f/g, " ");
+}
+
+function AnimatedStatNumber({ value, prefersReducedMotion }) {
+  const { target, suffix, useThousands } = React.useMemo(
+    () => parseStatValue(value),
+    [value],
+  );
+  const [displayValue, setDisplayValue] = React.useState(
+    prefersReducedMotion ? target : 0,
+  );
+  const numberRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (prefersReducedMotion) {
+      setDisplayValue(target);
+      return undefined;
+    }
+
+    const node = numberRef.current;
+    if (!node) {
+      return undefined;
+    }
+
+    let frameId = 0;
+    let startTime = 0;
+    const duration = 3200;
+
+    const animate = (timestamp) => {
+      if (!startTime) {
+        startTime = timestamp;
+      }
+
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+      const easedProgress = 1 - Math.pow(1 - progress, 3);
+
+      setDisplayValue(Math.round(target * easedProgress));
+
+      if (progress < 1) {
+        frameId = requestAnimationFrame(animate);
+      }
+    };
+
+    const startCounter = () => {
+      setDisplayValue(0);
+      frameId = requestAnimationFrame(animate);
+    };
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          startCounter();
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.35 },
+    );
+
+    observer.observe(node);
+
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frameId);
+    };
+  }, [prefersReducedMotion, target]);
+
+  return React.createElement(
+    "span",
+    { ref: numberRef, className: "stat-number" },
+    `${formatStatNumber(displayValue, useThousands)}${suffix}`,
+  );
+}
+
 export function HomePage() {
   useScrollReveal();
   const { isMobile, prefersReducedMotion, saveData } = useDevicePreferences();
@@ -67,7 +163,14 @@ export function HomePage() {
         React.createElement(
           "article",
           { key: s.label, className: "stat-card" },
-          React.createElement("h3", null, s.value),
+          React.createElement(
+            "h3",
+            null,
+            React.createElement(AnimatedStatNumber, {
+              value: s.value,
+              prefersReducedMotion,
+            }),
+          ),
           React.createElement("p", null, s.label),
         ),
       ),
@@ -158,8 +261,13 @@ export function HomePage() {
               React.createElement("h3", null, dish.name),
               React.createElement(
                 "p",
-                null,
-                `${dish.price.toLocaleString("vi-VN")} VND`,
+                { className: "dish-desc" },
+                dish.description,
+              ),
+              React.createElement(
+                "p",
+                { className: "menu-price" },
+                formatPrice(dish.price),
               ),
             ),
           ),

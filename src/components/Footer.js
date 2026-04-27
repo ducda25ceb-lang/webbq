@@ -2,6 +2,62 @@
 import { businessInfo } from "../data/mockData.js";
 import { isSupabaseConfigured, supabase } from "../lib/supabase.js";
 
+const socialLinks = [
+  {
+    key: "facebook",
+    label: "Facebook",
+    fallbackUrl: "https://www.facebook.com/",
+    icon: "f",
+  },
+  {
+    key: "zalo",
+    label: "Zalo",
+    fallbackUrl: "https://zalo.me/",
+    icon: "Zalo",
+  },
+  {
+    key: "instagram",
+    label: "Instagram",
+    fallbackUrl: "https://www.instagram.com/",
+    icon: "IG",
+  },
+  {
+    key: "tiktok",
+    label: "TikTok",
+    fallbackUrl: "https://www.tiktok.com/",
+    icon: "♪",
+  },
+];
+
+function SocialIcon({ item }) {
+  return React.createElement(
+    "svg",
+    {
+      className: `footer-social-icon footer-social-icon-${item.key}`,
+      viewBox: "0 0 48 48",
+      role: "img",
+      "aria-label": item.label,
+      focusable: "false",
+    },
+    React.createElement("circle", {
+      cx: "24",
+      cy: "24",
+      r: "21",
+      className: "footer-social-icon-bg",
+    }),
+    React.createElement(
+      "text",
+      {
+        x: "24",
+        y: item.key === "tiktok" ? "31" : "29",
+        textAnchor: "middle",
+        className: "footer-social-icon-mark",
+      },
+      item.icon,
+    ),
+  );
+}
+
 export function Footer() {
   const [subscribeEmail, setSubscribeEmail] = React.useState("");
   const [subscribeMsg, setSubscribeMsg] = React.useState({
@@ -87,38 +143,21 @@ export function Footer() {
         React.createElement("h4", null, "Thông tin"),
         React.createElement("p", null, businessInfo.address),
         React.createElement(
-          "p",
+          "div",
           { className: "footer-social-row" },
-          React.createElement(
-            "a",
-            {
-              href: businessInfo.socials?.tiktok || "https://www.tiktok.com/",
-              target: "_blank",
-              rel: "noreferrer",
-            },
-            "TikTok",
-          ),
-          " | ",
-          React.createElement(
-            "a",
-            {
-              href:
-                businessInfo.socials?.facebook || "https://www.facebook.com/",
-              target: "_blank",
-              rel: "noreferrer",
-            },
-            "Facebook",
-          ),
-          " | ",
-          React.createElement(
-            "a",
-            {
-              href:
-                businessInfo.socials?.instagram || "https://www.instagram.com/",
-              target: "_blank",
-              rel: "noreferrer",
-            },
-            "Instagram",
+          socialLinks.map((item) =>
+            React.createElement(
+              "a",
+              {
+                key: item.key,
+                href: businessInfo.socials?.[item.key] || item.fallbackUrl,
+                target: "_blank",
+                rel: "noreferrer",
+                "aria-label": item.label,
+                title: item.label,
+              },
+              React.createElement(SocialIcon, { item }),
+            ),
           ),
         ),
         React.createElement("p", null, `Hotline: ${businessInfo.hotline}`),
