@@ -9,6 +9,7 @@ import {
   cancelBooking,
   finalizeBookingPayment,
   isSupabaseConfigured,
+  sendBookingConfirmationEmail,
   supabase,
 } from "../lib/supabase.js";
 
@@ -175,7 +176,7 @@ export function DashboardPage() {
       );
       setActionMsg(
         canViewAllBookings
-          ? `Đã chấp nhận đơn đặt bàn ${bookingCode}.`
+          ? result.message || `Đã chấp nhận đơn đặt bàn ${bookingCode}.`
           : result.message,
       );
     } catch (confirmError) {
@@ -253,18 +254,16 @@ export function DashboardPage() {
       throw new Error("Thiếu mã đơn hoặc trạng thái.");
     }
 
-    const payload = {
-      status,
-      updated_at: new Date().toISOString(),
-    };
-
     if (status === BOOKING_STATUS_CONFIRMED) {
-      payload.confirmed_at = new Date().toISOString();
+      return sendBookingConfirmationEmail({ bookingCode });
     }
 
     const { data, error: updateError } = await supabase
       .from("bookings")
-      .update(payload)
+      .update({
+        status,
+        updated_at: new Date().toISOString(),
+      })
       .eq("booking_code", bookingCode)
       .select("booking_code")
       .maybeSingle();

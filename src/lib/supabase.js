@@ -8,6 +8,7 @@ const POST_LOGIN_REDIRECT_KEY = "ember-bbq-post-login-path";
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 export const BOOKING_STATUS_PENDING_QR = "Ch\u1edd thanh to\u00e1n QR";
+export const BOOKING_STATUS_PENDING_ADMIN = "Ch\u1edd admin x\u00e1c nh\u1eadn";
 export const BOOKING_STATUS_CONFIRMED = "\u0110\u00e3 x\u00e1c nh\u1eadn";
 export const BOOKING_STATUS_CANCELLED = "\u0110\u00e3 h\u1ee7y - m\u1ea5t c\u1ecdc";
 export const ADMIN_EMAILS = ["ducanh12082007dn@gmail.com"];
@@ -160,7 +161,7 @@ export async function finalizeBookingPayment({ bookingCode, userId }) {
       ok: true,
       emailSent: false,
       message:
-        "\u0110\u00e3 x\u00e1c nh\u1eadn \u0111\u1eb7t b\u00e0n. Email ch\u1ec9 ho\u1ea1t \u0111\u1ed9ng khi Supabase \u0111\u01b0\u1ee3c c\u1ea5u h\u00ecnh.",
+        "\u0110\u00e3 ghi nh\u1eadn thanh to\u00e1n QR. Email x\u00e1c nh\u1eadn s\u1ebd \u0111\u01b0\u1ee3c g\u1eedi sau khi admin ch\u1ea5p nh\u1eadn \u0111\u1eb7t b\u00e0n.",
     };
   }
 
@@ -171,7 +172,7 @@ export async function finalizeBookingPayment({ bookingCode, userId }) {
   const { data, error } = await supabase
     .from("bookings")
     .update({
-      status: BOOKING_STATUS_CONFIRMED,
+      status: BOOKING_STATUS_PENDING_ADMIN,
       updated_at: new Date().toISOString(),
     })
     .eq("booking_code", bookingCode)
@@ -185,6 +186,28 @@ export async function finalizeBookingPayment({ bookingCode, userId }) {
 
   if (!data) {
     throw new Error("Booking not found.");
+  }
+
+  return {
+    ok: true,
+    emailSent: false,
+    message:
+      "\u0110\u00e3 ghi nh\u1eadn b\u1ea1n ho\u00e0n t\u1ea5t QR. Admin s\u1ebd ki\u1ec3m tra v\u00e0 g\u1eedi email x\u00e1c nh\u1eadn sau khi ch\u1ea5p nh\u1eadn \u0111\u1eb7t b\u00e0n.",
+  };
+}
+
+export async function sendBookingConfirmationEmail({ bookingCode }) {
+  if (!isSupabaseConfigured) {
+    return {
+      ok: true,
+      emailSent: false,
+      message:
+        "Email x\u00e1c nh\u1eadn ch\u1ec9 ho\u1ea1t \u0111\u1ed9ng khi Supabase \u0111\u01b0\u1ee3c c\u1ea5u h\u00ecnh.",
+    };
+  }
+
+  if (!bookingCode) {
+    throw new Error("Missing bookingCode.");
   }
 
   try {

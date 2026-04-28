@@ -4,6 +4,7 @@ import {
   BOOKING_STATUS_CONFIRMED,
   BOOKING_STATUS_PENDING_QR,
   isSupabaseConfigured,
+  sendBookingConfirmationEmail,
   supabase,
 } from "../lib/supabase.js";
 
@@ -89,24 +90,29 @@ export function AdminPage() {
       }
     }
 
-    const payload = {
-      status,
-      updated_at: new Date().toISOString(),
-    };
+    let actionMessage = "";
 
     if (status === BOOKING_STATUS_CONFIRMED) {
-      payload.confirmed_at = new Date().toISOString();
-    }
+      const result = await sendBookingConfirmationEmail({
+        bookingCode: booking.booking_code,
+      });
+      actionMessage = result.message;
+    } else {
+      const { error: updateError } = await supabase
+        .from("bookings")
+        .update({
+          status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", booking.id);
 
-    const { error: updateError } = await supabase
-      .from("bookings")
-      .update(payload)
-      .eq("id", booking.id);
+      if (updateError) {
+        setError(updateError.message);
+        setBusyId("");
+        return;
+      }
 
-    if (updateError) {
-      setError(updateError.message);
-      setBusyId("");
-      return;
+      actionMessage = `Đã hủy bàn cho đơn ${booking.booking_code}.`;
     }
 
     setBookings((current) =>
@@ -114,11 +120,7 @@ export function AdminPage() {
         item.id === booking.id ? { ...item, status } : item,
       ),
     );
-    setActionMsg(
-      status === BOOKING_STATUS_CONFIRMED
-        ? `Đã chấp nhận đơn đặt bàn ${booking.booking_code}.`
-        : `Đã hủy bàn cho đơn ${booking.booking_code}.`,
-    );
+    setActionMsg(actionMessage);
     setBusyId("");
   };
 

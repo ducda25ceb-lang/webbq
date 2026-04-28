@@ -413,7 +413,7 @@ export function BookingPage() {
       React.createElement(
         "p",
         null,
-        "Sau khi \u0111\u1eb7t b\u00e0n, b\u1ea1n c\u00f3 th\u1ec3 qu\u00e9t m\u00e3 QR n\u00e0y \u0111\u1ec3 thanh to\u00e1n ti\u1ec1n c\u1ecdc 100.000 VND. Sau khi x\u00e1c nh\u1eadn thanh to\u00e1n, h\u1ec7 th\u1ed1ng s\u1ebd g\u1eedi email x\u00e1c nh\u1eadn \u0111\u1eb7t b\u00e0n.",
+        "Sau khi \u0111\u1eb7t b\u00e0n, b\u1ea1n c\u00f3 th\u1ec3 qu\u00e9t m\u00e3 QR n\u00e0y \u0111\u1ec3 thanh to\u00e1n ti\u1ec1n c\u1ecdc 100.000 VND. B\u1ea5m Ho\u00e0n t\u1ea5t QR \u0111\u1ec3 admin ki\u1ec3m tra; email x\u00e1c nh\u1eadn ch\u1ec9 \u0111\u01b0\u1ee3c g\u1eedi sau khi admin ch\u1ea5p nh\u1eadn.",
       ),
       React.createElement(
         "button",
@@ -423,7 +423,7 @@ export function BookingPage() {
           onClick: onComplete,
           disabled: !submitted || confirmingPayment,
         },
-        confirmingPayment ? "\u0110ang x\u1eed l\u00fd..." : "Ho\u00e0n th\u00e0nh",
+        confirmingPayment ? "\u0110ang x\u1eed l\u00fd..." : "Ho\u00e0n t\u1ea5t QR",
       ),
       completed
         ? React.createElement(

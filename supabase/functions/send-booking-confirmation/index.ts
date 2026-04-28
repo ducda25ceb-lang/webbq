@@ -6,8 +6,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+const ADMIN_EMAILS = new Set(["ducanh12082007dn@gmail.com"]);
+
 type BookingRow = {
   id: string;
+  user_id: string;
   booking_code: string;
   customer_name: string;
   customer_email: string | null;
@@ -146,14 +149,16 @@ Deno.serve(async (request) => {
       autoRefreshToken: false,
     },
   });
+  const isAdmin = ADMIN_EMAILS.has((user.email || "").trim().toLowerCase()) ||
+    user.user_metadata?.role === "admin" ||
+    user.app_metadata?.role === "admin";
 
   const { data: booking, error: bookingError } = await adminClient
     .from("bookings")
     .select(
-      "id, booking_code, customer_name, customer_email, phone, booking_date, booking_time, guests, status, confirmed_at, confirmation_email_sent_at, created_at",
+      "id, user_id, booking_code, customer_name, customer_email, phone, booking_date, booking_time, guests, status, confirmed_at, confirmation_email_sent_at, created_at",
     )
     .eq("booking_code", bookingCode)
-    .eq("user_id", user.id)
     .maybeSingle<BookingRow>();
 
   if (bookingError) {
@@ -162,6 +167,10 @@ Deno.serve(async (request) => {
 
   if (!booking) {
     return json(404, { error: "Booking not found." });
+  }
+
+  if (!isAdmin && booking.user_id !== user.id) {
+    return json(403, { error: "You cannot confirm this booking." });
   }
 
   const recipient = booking.customer_email || user.email;
@@ -173,20 +182,20 @@ Deno.serve(async (request) => {
   const now = new Date().toISOString();
   const alreadySent = Boolean(booking.confirmation_email_sent_at);
 
-  const { error: updateBookingError } = await adminClient
-    .from("bookings")
-    .update({
-      status: "Đã xác nhận",
-      confirmed_at: booking.confirmed_at || now,
-      updated_at: now,
-    })
-    .eq("id", booking.id);
-
-  if (updateBookingError) {
-    return json(500, { error: updateBookingError.message });
-  }
-
   if (alreadySent) {
+    const { error: updateBookingError } = await adminClient
+      .from("bookings")
+      .update({
+        status: "Đã xác nhận",
+        confirmed_at: booking.confirmed_at || now,
+        updated_at: now,
+      })
+      .eq("id", booking.id);
+
+    if (updateBookingError) {
+      return json(500, { error: updateBookingError.message });
+    }
+
     return json(200, {
       ok: true,
       alreadySent: true,
@@ -220,6 +229,8 @@ Deno.serve(async (request) => {
   const { error: markSentError } = await adminClient
     .from("bookings")
     .update({
+      status: "Đã xác nhận",
+      confirmed_at: booking.confirmed_at || now,
       confirmation_email_sent_at: now,
       updated_at: now,
     })
