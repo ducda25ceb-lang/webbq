@@ -413,7 +413,7 @@ export function BookingPage() {
       React.createElement(
         "p",
         null,
-        "Sau khi \u0111\u1eb7t b\u00e0n, b\u1ea1n c\u00f3 th\u1ec3 qu\u00e9t m\u00e3 QR n\u00e0y \u0111\u1ec3 thanh to\u00e1n ti\u1ec1n c\u1ecdc 100.000 VND. B\u1ea5m Ho\u00e0n t\u1ea5t QR \u0111\u1ec3 admin ki\u1ec3m tra; email x\u00e1c nh\u1eadn ch\u1ec9 \u0111\u01b0\u1ee3c g\u1eedi sau khi admin ch\u1ea5p nh\u1eadn.",
+        "Sau khi \u0111\u1eb7t b\u00e0n, b\u1ea1n c\u00f3 th\u1ec3 qu\u00e9t m\u00e3 QR n\u00e0y \u0111\u1ec3 thanh to\u00e1n ti\u1ec1n c\u1ecdc 100.000 VND.",
       ),
       React.createElement(
         "button",
@@ -430,7 +430,7 @@ export function BookingPage() {
             "p",
             { className: "success-msg" },
             confirmationMsg ||
-              "C\u1ea3m \u01a1n b\u1ea1n. \u0110\u1eb7t b\u00e0n \u0111\u00e3 \u0111\u01b0\u1ee3c ho\u00e0n t\u1ea5t.",
+              "Vui l\u00f2ng ch\u1edd qu\u1ea3n l\u00ed x\u00e1c nh\u1eadn trong 5 ph\u00fat.",
           )
         : null,
     ),

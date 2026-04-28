@@ -161,7 +161,7 @@ export async function finalizeBookingPayment({ bookingCode, userId }) {
       ok: true,
       emailSent: false,
       message:
-        "\u0110\u00e3 ghi nh\u1eadn thanh to\u00e1n QR. Email x\u00e1c nh\u1eadn s\u1ebd \u0111\u01b0\u1ee3c g\u1eedi sau khi admin ch\u1ea5p nh\u1eadn \u0111\u1eb7t b\u00e0n.",
+        "Vui l\u00f2ng ch\u1edd qu\u1ea3n l\u00ed x\u00e1c nh\u1eadn trong 5 ph\u00fat.",
     };
   }
 
@@ -192,7 +192,7 @@ export async function finalizeBookingPayment({ bookingCode, userId }) {
     ok: true,
     emailSent: false,
     message:
-      "\u0110\u00e3 ghi nh\u1eadn b\u1ea1n ho\u00e0n t\u1ea5t QR. Admin s\u1ebd ki\u1ec3m tra v\u00e0 g\u1eedi email x\u00e1c nh\u1eadn sau khi ch\u1ea5p nh\u1eadn \u0111\u1eb7t b\u00e0n.",
+      "Vui l\u00f2ng ch\u1edd qu\u1ea3n l\u00ed x\u00e1c nh\u1eadn trong 5 ph\u00fat.",
   };
 }
 
