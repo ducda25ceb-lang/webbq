@@ -948,6 +948,50 @@
   background: rgba(255, 159, 159, 0.14);
 }
 
+.admin-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.admin-heading h1 {
+  margin: 6px 0 8px;
+}
+
+.admin-table-panel {
+  margin-top: 14px;
+}
+
+.admin-book-table th:last-child,
+.admin-book-table td:last-child {
+  min-width: 230px;
+}
+
+.admin-email-cell {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.admin-action-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-action-btn {
+  padding: 8px 12px;
+}
+
+.admin-payment-note {
+  width: 100%;
+  font-size: 0.86rem;
+}
+
 @media (max-width: 920px) {
   .booking-layout {
     grid-template-columns: 1fr;
@@ -1018,6 +1062,11 @@
   .account-provider-box {
     width: 100%;
     justify-content: flex-start;
+  }
+
+  .admin-heading {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 

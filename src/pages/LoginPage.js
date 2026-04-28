@@ -4,6 +4,7 @@ import {
   useNavigate,
 } from "https://esm.sh/react-router-dom@6.28.0?deps=react@18.2.0,react-dom@18.2.0";
 import { useAuth } from "../context/AuthContext.js";
+import { getDefaultPostLoginPath } from "../lib/supabase.js";
 
 export function LoginPage() {
   const {
@@ -34,6 +35,8 @@ export function LoginPage() {
   const showGoogleAuth = isSupabaseConfigured;
   const googleEnabled = isSupabaseConfigured && authSettings.googleEnabled;
   const isWorking = loading || authBusy;
+  const redirectPath = location.state?.from ||
+    getDefaultPostLoginPath(user);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -45,9 +48,9 @@ export function LoginPage() {
 
   useEffect(() => {
     if (user && !loading) {
-      navigate("/dashboard", { replace: true });
+      navigate(redirectPath, { replace: true });
     }
-  }, [loading, navigate, user]);
+  }, [loading, navigate, redirectPath, user]);
 
   const switchMode = (nextMode) => {
     const resolvedMode = nextMode === "signup" && signupEnabled ? "signup" : "login";
@@ -73,11 +76,13 @@ export function LoginPage() {
     }
 
     setFeedback({ type: "", text: "" });
-    navigate("/dashboard");
+    navigate(location.state?.from || getDefaultPostLoginPath({ email: form.email }));
   };
 
   const onGoogleClick = async () => {
-    const result = await signInWithGoogle();
+    const result = await signInWithGoogle({
+      redirectPath: location.state?.from || "auto",
+    });
 
     if (!result.ok) {
       setFeedback({ type: "error", text: result.message });

@@ -9,6 +9,7 @@ import {
   DEFAULT_AUTH_SETTINGS,
   fetchAuthSettings,
   isSupabaseConfigured,
+  savePostLoginRedirect,
   supabase,
   toAppUser,
 } from "../lib/supabase.js";
@@ -242,7 +243,7 @@ export function AuthProvider({ children }) {
     return { ok: true };
   };
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async ({ redirectPath } = {}) => {
     if (!isSupabaseConfigured) {
       return {
         ok: false,
@@ -259,6 +260,7 @@ export function AuthProvider({ children }) {
     }
 
     setAuthBusy(true);
+    savePostLoginRedirect(redirectPath || "auto");
 
     try {
       const { error } = await supabase.auth.signInWithOAuth({

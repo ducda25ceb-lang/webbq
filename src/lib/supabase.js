@@ -4,11 +4,13 @@ const config = globalThis.__SUPABASE_CONFIG__ || {};
 const supabaseUrl = config.url || "";
 const supabaseAnonKey = config.anonKey || "";
 let authSettingsPromise = null;
+const POST_LOGIN_REDIRECT_KEY = "ember-bbq-post-login-path";
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 export const BOOKING_STATUS_PENDING_QR = "Ch\u1edd thanh to\u00e1n QR";
 export const BOOKING_STATUS_CONFIRMED = "\u0110\u00e3 x\u00e1c nh\u1eadn";
 export const BOOKING_STATUS_CANCELLED = "\u0110\u00e3 h\u1ee7y - m\u1ea5t c\u1ecdc";
+export const ADMIN_EMAILS = ["ducanh12082007dn@gmail.com"];
 export const DEFAULT_AUTH_SETTINGS = Object.freeze({
   disableSignup: false,
   emailEnabled: false,
@@ -114,6 +116,42 @@ export function toAppUser(supabaseUser) {
     hasGoogleLinked: providers.includes("google"),
     role: supabaseUser.user_metadata?.role || "customer",
   };
+}
+
+export function isAdminUser(user) {
+  if (!user) {
+    return false;
+  }
+
+  return ADMIN_EMAILS.includes((user.email || "").trim().toLowerCase()) ||
+    user.role === "admin";
+}
+
+export function getDefaultPostLoginPath(user) {
+  return isAdminUser(user) ? "/admin" : "/dashboard";
+}
+
+export function savePostLoginRedirect(path = "auto") {
+  try {
+    localStorage.setItem(POST_LOGIN_REDIRECT_KEY, path || "auto");
+  } catch {
+    // Ignore storage failures; login still works and falls back to the current page.
+  }
+}
+
+export function consumePostLoginRedirect(user) {
+  try {
+    const storedPath = localStorage.getItem(POST_LOGIN_REDIRECT_KEY);
+
+    if (!storedPath) {
+      return "";
+    }
+
+    localStorage.removeItem(POST_LOGIN_REDIRECT_KEY);
+    return storedPath === "auto" ? getDefaultPostLoginPath(user) : storedPath;
+  } catch {
+    return "";
+  }
 }
 
 export async function finalizeBookingPayment({ bookingCode, userId }) {
