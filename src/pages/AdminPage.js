@@ -22,6 +22,14 @@ function formatAdminDate(value) {
   }).format(new Date(`${value}T00:00:00`));
 }
 
+function getAdminDisplayStatus(status) {
+  if (status === BOOKING_STATUS_CANCELLED) {
+    return "Đã hủy";
+  }
+
+  return status;
+}
+
 export function AdminPage() {
   const [bookings, setBookings] = React.useState([]);
   const [loading, setLoading] = React.useState(isSupabaseConfigured);
@@ -70,6 +78,17 @@ export function AdminPage() {
     setError("");
     setActionMsg("");
 
+    if (status === BOOKING_STATUS_CANCELLED) {
+      const shouldCancel = globalThis.confirm(
+        `Hủy bàn cho đơn ${booking.booking_code}?`,
+      );
+
+      if (!shouldCancel) {
+        setBusyId("");
+        return;
+      }
+    }
+
     const payload = {
       status,
       updated_at: new Date().toISOString(),
@@ -95,7 +114,11 @@ export function AdminPage() {
         item.id === booking.id ? { ...item, status } : item,
       ),
     );
-    setActionMsg(`Đã cập nhật đơn ${booking.booking_code}.`);
+    setActionMsg(
+      status === BOOKING_STATUS_CONFIRMED
+        ? `Đã chấp nhận đơn đặt bàn ${booking.booking_code}.`
+        : `Đã hủy bàn cho đơn ${booking.booking_code}.`,
+    );
     setBusyId("");
   };
 
@@ -217,7 +240,11 @@ export function AdminPage() {
                         `${formatAdminDate(booking.booking_date)} - ${booking.booking_time}`,
                       ),
                       React.createElement("td", null, booking.guests),
-                      React.createElement("td", null, booking.status),
+                      React.createElement(
+                        "td",
+                        null,
+                        getAdminDisplayStatus(booking.status),
+                      ),
                       React.createElement(
                         "td",
                         null,
@@ -237,7 +264,7 @@ export function AdminPage() {
                                       BOOKING_STATUS_CONFIRMED,
                                     ),
                                 },
-                                "Xác nhận",
+                                "Chấp nhận đặt bàn",
                               )
                             : null,
                           booking.status !== BOOKING_STATUS_CANCELLED
@@ -254,7 +281,7 @@ export function AdminPage() {
                                       BOOKING_STATUS_CANCELLED,
                                     ),
                                 },
-                                "Hủy",
+                                "Hủy bàn",
                               )
                             : null,
                           booking.status === BOOKING_STATUS_PENDING_QR

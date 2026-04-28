@@ -24,6 +24,14 @@ function formatBookingRow(row) {
   };
 }
 
+function getDisplayStatus(status, isAdmin) {
+  if (isAdmin && status === BOOKING_STATUS_CANCELLED) {
+    return "Đã hủy";
+  }
+
+  return status;
+}
+
 export function DashboardPage() {
   const { authBusy, linkGoogleAccount, user } = useAuth();
   const canViewAllBookings = isAdminUser(user);
@@ -38,6 +46,12 @@ export function DashboardPage() {
 
   const canCancelBooking = React.useCallback(
     (status) => status !== BOOKING_STATUS_CANCELLED,
+    [],
+  );
+
+  const canAcceptBooking = React.useCallback(
+    (status) => status !== BOOKING_STATUS_CONFIRMED &&
+      status !== BOOKING_STATUS_CANCELLED,
     [],
   );
 
@@ -142,10 +156,15 @@ export function DashboardPage() {
     setActionMsg("");
 
     try {
-      const result = await finalizeBookingPayment({
-        bookingCode,
-        userId: user.id,
-      });
+      const result = canViewAllBookings
+        ? await updateAdminBookingStatus({
+            bookingCode,
+            status: BOOKING_STATUS_CONFIRMED,
+          })
+        : await finalizeBookingPayment({
+            bookingCode,
+            userId: user.id,
+          });
 
       setBookings((current) =>
         current.map((booking) =>
@@ -154,7 +173,11 @@ export function DashboardPage() {
             : booking,
         ),
       );
-      setActionMsg(result.message);
+      setActionMsg(
+        canViewAllBookings
+          ? `Đã chấp nhận đơn đặt bàn ${bookingCode}.`
+          : result.message,
+      );
     } catch (confirmError) {
       setError(
         confirmError?.context?.message ||
@@ -178,7 +201,9 @@ export function DashboardPage() {
     }
 
     const shouldCancel = globalThis.confirm(
-      "Hủy đặt bàn này sẽ mất cọc. Bạn vẫn muốn tiếp tục?",
+      canViewAllBookings
+        ? `Hủy bàn cho đơn ${bookingCode}?`
+        : "Hủy đặt bàn này sẽ mất cọc. Bạn vẫn muốn tiếp tục?",
     );
 
     if (!shouldCancel) {
@@ -190,10 +215,15 @@ export function DashboardPage() {
     setActionMsg("");
 
     try {
-      const result = await cancelBooking({
-        bookingCode,
-        userId: user.id,
-      });
+      const result = canViewAllBookings
+        ? await updateAdminBookingStatus({
+            bookingCode,
+            status: BOOKING_STATUS_CANCELLED,
+          })
+        : await cancelBooking({
+            bookingCode,
+            userId: user.id,
+          });
 
       setBookings((current) =>
         current.map((booking) =>
@@ -202,7 +232,11 @@ export function DashboardPage() {
             : booking,
         ),
       );
-      setActionMsg(result.message);
+      setActionMsg(
+        canViewAllBookings
+          ? `Đã hủy bàn cho đơn ${bookingCode}.`
+          : result.message,
+      );
     } catch (cancelError) {
       setError(
         cancelError?.context?.message ||
@@ -212,6 +246,38 @@ export function DashboardPage() {
     } finally {
       setCancelingCode("");
     }
+  };
+
+  const updateAdminBookingStatus = async ({ bookingCode, status }) => {
+    if (!bookingCode || !status) {
+      throw new Error("Thiếu mã đơn hoặc trạng thái.");
+    }
+
+    const payload = {
+      status,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (status === BOOKING_STATUS_CONFIRMED) {
+      payload.confirmed_at = new Date().toISOString();
+    }
+
+    const { data, error: updateError } = await supabase
+      .from("bookings")
+      .update(payload)
+      .eq("booking_code", bookingCode)
+      .select("booking_code")
+      .maybeSingle();
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    if (!data) {
+      throw new Error("Không tìm thấy đơn hoặc tài khoản admin chưa có quyền cập nhật.");
+    }
+
+    return { ok: true };
   };
 
   return React.createElement(
@@ -340,12 +406,35 @@ export function DashboardPage() {
                       React.createElement(
                         "td",
                         { className: "dashboard-status-cell" },
-                        React.createElement("span", null, booking.status),
+                        React.createElement(
+                          "span",
+                          null,
+                          getDisplayStatus(booking.status, canViewAllBookings),
+                        ),
                         isSupabaseConfigured
                           ? React.createElement(
                               "div",
                               { className: "dashboard-action-group" },
-                              booking.status === BOOKING_STATUS_PENDING_QR
+                              canViewAllBookings &&
+                                canAcceptBooking(booking.status)
+                                ? React.createElement(
+                                    "button",
+                                    {
+                                      type: "button",
+                                      className: "btn-gold dashboard-action-btn",
+                                      disabled:
+                                        confirmingCode === booking.bookingCode ||
+                                        cancelingCode === booking.bookingCode,
+                                      onClick: () =>
+                                        confirmBooking(booking.bookingCode),
+                                    },
+                                    confirmingCode === booking.bookingCode
+                                      ? "Đang chấp nhận..."
+                                      : "Chấp nhận đặt bàn",
+                                  )
+                                : null,
+                              !canViewAllBookings &&
+                                booking.status === BOOKING_STATUS_PENDING_QR
                                 ? React.createElement(
                                     "button",
                                     {
@@ -377,7 +466,9 @@ export function DashboardPage() {
                                     },
                                     cancelingCode === booking.bookingCode
                                       ? "Đang hủy..."
-                                      : "Hủy đặt bàn",
+                                      : canViewAllBookings
+                                        ? "Hủy bàn"
+                                        : "Hủy đặt bàn",
                                   )
                                 : null,
                             )
