@@ -1,4 +1,5 @@
 import React from "https://esm.sh/react@18.2.0";
+import { isAdminUser } from "../config/admin.js";
 import { mockBookings } from "../data/mockData.js";
 import { useAuth } from "../context/AuthContext.js";
 import {
@@ -15,7 +16,7 @@ function formatBookingRow(row) {
   return {
     id: row.booking_code || row.id,
     bookingCode: row.booking_code || row.id,
-    customer: row.customer_name || row.customer_email || "Kh\u00e1ch",
+    customer: row.customer_name || row.customer_email || "Khách",
     date: row.booking_date || row.date,
     time: row.booking_time || row.time,
     guests: row.guests,
@@ -25,6 +26,7 @@ function formatBookingRow(row) {
 
 export function DashboardPage() {
   const { authBusy, linkGoogleAccount, user } = useAuth();
+  const canViewAllBookings = isAdminUser(user);
   const [bookings, setBookings] = React.useState([]);
   const [loading, setLoading] = React.useState(isSupabaseConfigured);
   const [error, setError] = React.useState("");
@@ -77,12 +79,17 @@ export function DashboardPage() {
       setLoading(true);
 
       try {
-        const { data, error: loadError } = await supabase
+        let query = supabase
           .from("bookings")
           .select(
             "booking_code, customer_name, customer_email, booking_date, booking_time, guests, status",
-          )
-          .eq("user_id", user.id)
+          );
+
+        if (!canViewAllBookings) {
+          query = query.eq("user_id", user.id);
+        }
+
+        const { data, error: loadError } = await query
           .order("booking_date", { ascending: false })
           .order("booking_time", { ascending: false });
 
@@ -103,9 +110,7 @@ export function DashboardPage() {
           return;
         }
 
-        setError(
-          "Kh\u00f4ng th\u1ec3 k\u1ebft n\u1ed1i Supabase \u0111\u1ec3 t\u1ea3i l\u1ecbch \u0111\u1eb7t b\u00e0n.",
-        );
+        setError("Không thể kết nối Supabase để tải lịch đặt bàn.");
         setBookings([]);
       } finally {
         if (active) {
@@ -119,7 +124,7 @@ export function DashboardPage() {
     return () => {
       active = false;
     };
-  }, [user?.id]);
+  }, [canViewAllBookings, user?.id]);
 
   const confirmBooking = async (bookingCode) => {
     if (
@@ -154,7 +159,7 @@ export function DashboardPage() {
       setError(
         confirmError?.context?.message ||
           confirmError?.message ||
-          "Kh\u00f4ng th\u1ec3 ho\u00e0n t\u1ea5t \u0111\u01a1n \u0111\u1eb7t b\u00e0n l\u00fac n\u00e0y.",
+          "Không thể hoàn tất đơn đặt bàn lúc này.",
       );
     } finally {
       setConfirmingCode("");
@@ -202,7 +207,7 @@ export function DashboardPage() {
       setError(
         cancelError?.context?.message ||
           cancelError?.message ||
-          "Kh\u00f4ng th\u1ec3 h\u1ee7y \u0111\u1eb7t b\u00e0n l\u00fac n\u00e0y.",
+          "Không thể hủy đặt bàn lúc này.",
       );
     } finally {
       setCancelingCode("");
@@ -212,7 +217,13 @@ export function DashboardPage() {
   return React.createElement(
     "div",
     { className: "container section" },
-    React.createElement("h1", null, `Xin ch\u00e0o, ${user?.name || "Kh\u00e1ch"}`),
+    React.createElement(
+      "h1",
+      null,
+      canViewAllBookings
+        ? "Bảng quản trị đặt bàn"
+        : `Xin chào, ${user?.name || "Khách"}`,
+    ),
     isSupabaseConfigured && user
       ? React.createElement(
           "section",
@@ -223,7 +234,7 @@ export function DashboardPage() {
             user.avatarUrl
               ? React.createElement("img", {
                   src: user.avatarUrl,
-                  alt: user.name || "T\u00e0i kho\u1ea3n",
+                  alt: user.name || "Tài khoản",
                 })
               : React.createElement(
                   "span",
@@ -233,7 +244,7 @@ export function DashboardPage() {
             React.createElement(
               "div",
               null,
-              React.createElement("h2", null, user.name || "Kh\u00e1ch"),
+              React.createElement("h2", null, user.name || "Khách"),
               React.createElement("p", { className: "muted" }, user.email),
             ),
           ),
@@ -275,8 +286,10 @@ export function DashboardPage() {
       "p",
       { className: "muted" },
       shouldUseMock
-        ? "L\u1ecbch s\u1eed \u0111\u1eb7t b\u00e0n (mock data sau \u0111\u0103ng nh\u1eadp)."
-        : "L\u1ecbch s\u1eed \u0111\u1eb7t b\u00e0n \u0111ang \u0111\u01b0\u1ee3c t\u1ea3i t\u1eeb Supabase.",
+        ? "Lịch sử đặt bàn (mock data sau đăng nhập)."
+        : canViewAllBookings
+          ? "Admin đang xem toàn bộ lịch đặt bàn từ Supabase."
+          : "Lịch sử đặt bàn đang được tải từ Supabase.",
     ),
     error ? React.createElement("p", { className: "error-msg" }, error) : null,
     actionMsg
@@ -286,14 +299,14 @@ export function DashboardPage() {
       ? React.createElement(
           "p",
           { className: "muted" },
-          "H\u00e3y \u0111\u0103ng nh\u1eadp \u0111\u1ec3 xem l\u1ecbch \u0111\u1eb7t b\u00e0n c\u1ee7a b\u1ea1n.",
+          "Hãy đăng nhập để xem lịch đặt bàn của bạn.",
         )
       : null,
     React.createElement(
       "div",
       { className: "panel table-wrap" },
       loading
-        ? React.createElement("p", null, "\u0110ang t\u1ea3i l\u1ecbch \u0111\u1eb7t b\u00e0n...")
+        ? React.createElement("p", null, "Đang tải lịch đặt bàn...")
         : React.createElement(
             "table",
             { className: "book-table" },
@@ -303,12 +316,12 @@ export function DashboardPage() {
               React.createElement(
                 "tr",
                 null,
-                React.createElement("th", null, "M\u00e3 \u0111\u01a1n"),
-                React.createElement("th", null, "Kh\u00e1ch h\u00e0ng"),
-                React.createElement("th", null, "Ng\u00e0y"),
-                React.createElement("th", null, "Gi\u1edd"),
-                React.createElement("th", null, "S\u1ed1 kh\u00e1ch"),
-                React.createElement("th", null, "Tr\u1ea1ng th\u00e1i"),
+                React.createElement("th", null, "Mã đơn"),
+                React.createElement("th", null, "Khách hàng"),
+                React.createElement("th", null, "Ngày"),
+                React.createElement("th", null, "Giờ"),
+                React.createElement("th", null, "Số khách"),
+                React.createElement("th", null, "Trạng thái"),
               ),
             ),
             React.createElement(
@@ -345,8 +358,8 @@ export function DashboardPage() {
                                         confirmBooking(booking.bookingCode),
                                     },
                                     confirmingCode === booking.bookingCode
-                                      ? "\u0110ang x\u00e1c nh\u1eadn..."
-                                      : "Ho\u00e0n t\u1ea5t QR",
+                                      ? "Đang xác nhận..."
+                                      : "Hoàn tất QR",
                                   )
                                 : null,
                               canCancelBooking(booking.status)
@@ -363,8 +376,8 @@ export function DashboardPage() {
                                         onCancelBooking(booking.bookingCode),
                                     },
                                     cancelingCode === booking.bookingCode
-                                      ? "\u0110ang h\u1ee7y..."
-                                      : "H\u1ee7y \u0111\u1eb7t b\u00e0n",
+                                      ? "Đang hủy..."
+                                      : "Hủy đặt bàn",
                                   )
                                 : null,
                             )
@@ -378,7 +391,7 @@ export function DashboardPage() {
                     React.createElement(
                       "td",
                       { colSpan: 6, className: "muted" },
-                      "Ch\u01b0a c\u00f3 l\u1ecbch \u0111\u1eb7t b\u00e0n n\u00e0o.",
+                      "Chưa có lịch đặt bàn nào.",
                     ),
                   ),
             ),
