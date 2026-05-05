@@ -168,6 +168,20 @@
   font-size: 1.05rem;
 }
 
+.space-section {
+  margin-top: 28px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.space-section img {
+  width: 100%;
+  height: auto;
+}
+
 .review-section {
   margin-top: 26px;
   display: grid;
@@ -522,6 +536,43 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+.floor-plan-panel {
+  grid-column: 1 / -1;
+}
+
+.floor-plan-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+.floor-plan-heading h2 {
+  margin: 0;
+  color: var(--gold-strong);
+}
+
+.floor-plan-heading p {
+  max-width: 620px;
+  margin: 0;
+  line-height: 1.55;
+}
+
+.floor-plan-frame {
+  overflow: hidden;
+  border: 1px solid rgba(226, 187, 111, 0.28);
+  border-radius: 16px;
+  background: #050505;
+}
+
+.floor-plan-frame img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
 }
 
 .success-msg {
@@ -960,6 +1011,49 @@
   margin: 6px 0 8px;
 }
 
+.admin-permission-note {
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.admin-stat-card {
+  min-height: 126px;
+  padding: 16px;
+  border: 1px solid rgba(201, 163, 91, 0.24);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent),
+    rgba(255, 255, 255, 0.025);
+}
+
+.admin-stat-card span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.admin-stat-card strong {
+  display: block;
+  margin: 8px 0;
+  color: var(--gold-strong);
+  font-size: 1.65rem;
+  line-height: 1;
+}
+
+.admin-stat-card p {
+  margin: 0;
+  color: rgba(245, 240, 230, 0.82);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
 .admin-table-panel {
   margin-top: 14px;
 }
@@ -1052,6 +1146,11 @@
   .video-wrap video {
     object-fit: contain;
     background: #000;
+  }
+
+  .floor-plan-heading {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .account-link-panel {

@@ -3,13 +3,37 @@ import {
   BOOKING_STATUS_CANCELLED,
   BOOKING_STATUS_CONFIRMED,
   BOOKING_STATUS_PENDING_QR,
+  ADMIN_EMAILS,
   isSupabaseConfigured,
   sendBookingConfirmationEmail,
   supabase,
 } from "../lib/supabase.js";
+import { useAuth } from "../context/AuthContext.js";
 
 const BOOKING_SELECT =
   "id, booking_code, customer_name, customer_email, phone, booking_date, booking_time, guests, status, created_at";
+const DEPOSIT_AMOUNT = 100000;
+const LEGACY_PENDING_STATUS = "Đang chờ";
+
+function getLocalDateValue(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function isPendingBooking(status) {
+  return status === BOOKING_STATUS_PENDING_QR || status === LEGACY_PENDING_STATUS;
+}
+
+function formatMoney(value) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
 
 function formatAdminDate(value) {
   if (!value) {
@@ -32,11 +56,75 @@ function getAdminDisplayStatus(status) {
 }
 
 export function AdminPage() {
+  const { user } = useAuth();
   const [bookings, setBookings] = React.useState([]);
   const [loading, setLoading] = React.useState(isSupabaseConfigured);
   const [error, setError] = React.useState("");
   const [actionMsg, setActionMsg] = React.useState("");
   const [busyId, setBusyId] = React.useState("");
+  const adminEmailsText = ADMIN_EMAILS.join(", ");
+
+  const stats = React.useMemo(() => {
+    const today = getLocalDateValue();
+    const activeBookings = bookings.filter(
+      (booking) => booking.status !== BOOKING_STATUS_CANCELLED,
+    );
+    const confirmedBookings = bookings.filter(
+      (booking) => booking.status === BOOKING_STATUS_CONFIRMED,
+    );
+    const pendingBookings = bookings.filter((booking) =>
+      isPendingBooking(booking.status),
+    );
+    const cancelledBookings = bookings.filter(
+      (booking) => booking.status === BOOKING_STATUS_CANCELLED,
+    );
+    const todayBookings = activeBookings.filter(
+      (booking) => booking.booking_date === today,
+    );
+    const upcomingBookings = activeBookings.filter(
+      (booking) => booking.booking_date >= today,
+    );
+    const upcomingGuests = upcomingBookings.reduce(
+      (sum, booking) => sum + Number(booking.guests || 0),
+      0,
+    );
+
+    return [
+      {
+        label: "Tổng đơn",
+        value: String(bookings.length),
+        detail: `${activeBookings.length} đơn còn hiệu lực`,
+      },
+      {
+        label: "Đã xác nhận",
+        value: String(confirmedBookings.length),
+        detail: `${formatMoney(confirmedBookings.length * DEPOSIT_AMOUNT)} tiền cọc`,
+      },
+      {
+        label: "Chờ QR",
+        value: String(pendingBookings.length),
+        detail: "Cần khách hoặc admin hoàn tất",
+      },
+      {
+        label: "Đã hủy",
+        value: String(cancelledBookings.length),
+        detail: "Không còn giữ khung giờ",
+      },
+      {
+        label: "Hôm nay",
+        value: String(todayBookings.length),
+        detail: `${todayBookings.reduce(
+          (sum, booking) => sum + Number(booking.guests || 0),
+          0,
+        )} khách`,
+      },
+      {
+        label: "Sắp tới",
+        value: String(upcomingBookings.length),
+        detail: `${upcomingGuests} khách còn hiệu lực`,
+      },
+    ];
+  }, [bookings]);
 
   const loadBookings = React.useCallback(async () => {
     if (!isSupabaseConfigured) {
@@ -173,6 +261,11 @@ export function AdminPage() {
           { className: "muted" },
           "Trang này chỉ mở cho tài khoản admin đã đăng nhập.",
         ),
+        React.createElement(
+          "p",
+          { className: "muted admin-permission-note" },
+          `Đang đăng nhập: ${user?.email || "không rõ"} | Email admin hợp lệ: ${adminEmailsText}`,
+        ),
       ),
       React.createElement(
         "button",
@@ -189,6 +282,23 @@ export function AdminPage() {
     actionMsg
       ? React.createElement("p", { className: "success-msg" }, actionMsg)
       : null,
+    React.createElement(
+      "section",
+      { className: "admin-stats-grid", "aria-label": "Thống kê đặt bàn" },
+      stats.map((item) =>
+        React.createElement(
+          "article",
+          { key: item.label, className: "admin-stat-card" },
+          React.createElement("span", null, item.label),
+          React.createElement("strong", null, loading ? "-" : item.value),
+          React.createElement(
+            "p",
+            null,
+            loading ? "Đang cập nhật dữ liệu" : item.detail,
+          ),
+        ),
+      ),
+    ),
     React.createElement(
       "div",
       { className: "panel table-wrap admin-table-panel" },

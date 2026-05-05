@@ -42,6 +42,17 @@ npm run dev
 
 Then open `http://127.0.0.1:5500/`.
 
+## Deploy To GitHub Pages
+
+This project is ready to publish as a static GitHub Pages site.
+
+1. Push the repository to GitHub.
+2. In GitHub, open `Settings` > `Pages`.
+3. Set `Build and deployment` to `GitHub Actions`.
+4. Push to the `main` branch or run the workflow manually from the `Actions` tab.
+
+Because the app uses `HashRouter`, routes continue to work on GitHub Pages without extra rewrite rules.
+
 ## Supabase Setup
 
 The app reads Supabase credentials from `index.html` through `window.__SUPABASE_CONFIG__`.

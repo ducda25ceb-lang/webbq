@@ -205,6 +205,16 @@ export function HomePage() {
     ),
     React.createElement(
       "section",
+      { className: "space-section reveal" },
+      React.createElement("img", {
+        src: "./assets/images/ember-space-collage.png",
+        alt: "Không gian quán Ember BBQ",
+        loading: "lazy",
+        onError: handleImageError,
+      }),
+    ),
+    React.createElement(
+      "section",
       { className: "home-video-section panel reveal" },
       React.createElement("h2", null, "Video Không Gian Thực Tế"),
       React.createElement(

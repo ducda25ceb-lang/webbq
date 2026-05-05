@@ -136,8 +136,7 @@
     price: 1150000,
     description:
       "Set cao cấp cho 2 người với thịt và hải sản chọn lọc. Khẩu phần gọn nhưng đủ vị.",
-    image:
-      "https://images.unsplash.com/photo-1543332164-6e82f355bad5?q=80&w=1200&auto=format&fit=crop",
+    image: "./assets/images/menu-combo.svg",
   },
   {
     id: 15,

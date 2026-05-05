@@ -434,6 +434,29 @@ export function BookingPage() {
           )
         : null,
     ),
+    React.createElement(
+      "section",
+      { className: "panel floor-plan-panel reveal" },
+      React.createElement(
+        "div",
+        { className: "floor-plan-heading" },
+        React.createElement("h2", null, "S\u01a1 \u0111\u1ed3 kh\u00f4ng gian Ember BBQ"),
+        React.createElement(
+          "p",
+          { className: "muted" },
+          "Kh\u00e1ch c\u00f3 th\u1ec3 xem tr\u01b0\u1edbc khu v\u1ef1c b\u00e0n, l\u1ed1i \u0111i, qu\u1ea7y bar, b\u1ebfp v\u00e0 ph\u00f2ng VIP tr\u01b0\u1edbc khi \u0111\u1eb7t.",
+        ),
+      ),
+      React.createElement(
+        "div",
+        { className: "floor-plan-frame" },
+        React.createElement("img", {
+          src: "./assets/images/ember-bbq-floor-plan.png",
+          alt: "S\u01a1 \u0111\u1ed3 kh\u00f4ng gian nh\u00e0 h\u00e0ng Ember BBQ",
+          loading: "lazy",
+        }),
+      ),
+    ),
     showSuccessPopup
       ? React.createElement(
           "div",
