@@ -1007,6 +1007,17 @@
   margin-bottom: 18px;
 }
 
+.admin-page,
+.admin-page button,
+.admin-page input,
+.admin-page select,
+.admin-page textarea,
+.admin-page h1,
+.admin-page h2,
+.admin-page h3 {
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+
 .admin-heading h1 {
   margin: 6px 0 8px;
 }
@@ -1058,9 +1069,153 @@
   margin-top: 14px;
 }
 
+.admin-section-heading {
+  margin-bottom: 16px;
+}
+
+.admin-section-heading h2 {
+  margin: 0 0 6px;
+  font-size: 1.35rem;
+}
+
+.admin-section-heading p {
+  margin: 0;
+}
+
+.admin-chart-panel {
+  margin-top: 18px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.015)),
+    radial-gradient(circle at 12% 0%, rgba(226, 187, 111, 0.12), transparent 34%),
+    rgba(9, 10, 10, 0.72);
+}
+
+.admin-bar-chart {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-bar-row {
+  display: grid;
+  grid-template-columns: 74px 1fr 48px;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-bar-label {
+  color: rgba(245, 240, 230, 0.88);
+  font-weight: 700;
+}
+
+.admin-bar-track {
+  height: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(201, 163, 91, 0.24);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.admin-bar-fill {
+  height: 100%;
+  min-width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--gold), var(--gold-strong));
+  transition: width 0.35s ease;
+}
+
+.admin-bar-value {
+  color: var(--gold-strong);
+  text-align: right;
+}
+
+.admin-line-chart {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgba(201, 163, 91, 0.18);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.01)),
+    rgba(0, 0, 0, 0.18);
+}
+
+.admin-line-chart svg {
+  width: 100%;
+  min-height: 260px;
+  overflow: visible;
+}
+
+.admin-chart-grid-line {
+  stroke: rgba(226, 187, 111, 0.36);
+  stroke-width: 1;
+}
+
+.admin-chart-soft-line {
+  stroke: rgba(245, 240, 230, 0.08);
+  stroke-dasharray: 4 8;
+  stroke-width: 1;
+}
+
+.admin-line-area {
+  fill: url("#adminAreaGradient");
+}
+
+.admin-line-path {
+  fill: none;
+  stroke: url("#adminLineGradient");
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 5;
+  filter: drop-shadow(0 8px 12px rgba(226, 187, 111, 0.2));
+}
+
+.admin-line-dot {
+  fill: #111314;
+  stroke: #f4c86a;
+  stroke-width: 4;
+  filter: drop-shadow(0 3px 8px rgba(244, 200, 106, 0.24));
+}
+
+.admin-line-value {
+  fill: #ffe3a3;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.admin-line-label {
+  fill: rgba(245, 240, 230, 0.74);
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.admin-line-legend,
+.admin-chart-note {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.admin-line-legend span,
+.admin-chart-note span {
+  padding: 8px 11px;
+  border: 1px solid rgba(201, 163, 91, 0.24);
+  border-radius: 10px;
+  color: rgba(245, 240, 230, 0.9);
+  background: rgba(255, 255, 255, 0.035);
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 0.88rem;
+}
+
 .admin-book-table th:last-child,
 .admin-book-table td:last-child {
   min-width: 230px;
+}
+
+.admin-booking-card-list {
+  display: none;
 }
 
 .admin-email-cell {
@@ -1084,6 +1239,193 @@
 .admin-payment-note {
   width: 100%;
   font-size: 0.86rem;
+}
+
+.admin-status-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(226, 187, 111, 0.28);
+  font-size: 0.88rem;
+  white-space: nowrap;
+}
+
+.admin-status-pill.is-confirmed {
+  color: #95f19a;
+  border-color: rgba(149, 241, 154, 0.38);
+  background: rgba(149, 241, 154, 0.08);
+}
+
+.admin-status-pill.is-cancelled {
+  color: #ffb0b0;
+  border-color: rgba(255, 159, 159, 0.4);
+  background: rgba(255, 159, 159, 0.08);
+}
+
+.admin-status-pill.is-pending {
+  color: var(--gold-strong);
+  background: rgba(226, 187, 111, 0.08);
+}
+
+.admin-contact-panel {
+  margin-top: 18px;
+}
+
+.admin-contact-list {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-contact-card {
+  padding: 16px;
+  border: 1px solid rgba(201, 163, 91, 0.22);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.admin-contact-meta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.admin-contact-meta strong,
+.admin-contact-meta span {
+  display: block;
+}
+
+.admin-contact-meta time {
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.admin-contact-message {
+  margin: 0 0 12px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.admin-contact-card textarea {
+  width: 100%;
+  min-height: 108px;
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid rgba(201, 163, 91, 0.35);
+  border-radius: 12px;
+  background: #17191b;
+  color: var(--text);
+  font-family: "Segoe UI", Arial, sans-serif;
+  resize: vertical;
+}
+
+.admin-contact-card textarea::placeholder {
+  color: rgba(245, 240, 230, 0.55);
+}
+
+.admin-reply-link {
+  display: inline-flex;
+}
+
+@media (max-width: 760px) {
+  .admin-table-panel {
+    overflow: visible;
+  }
+
+  .admin-book-table-desktop {
+    display: none;
+  }
+
+  .admin-booking-card-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .admin-booking-card {
+    padding: 14px;
+    border: 1px solid rgba(201, 163, 91, 0.22);
+    border-radius: 14px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.015)),
+      rgba(0, 0, 0, 0.18);
+  }
+
+  .admin-booking-card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .admin-booking-card-head .admin-status-pill {
+    flex: 0 1 auto;
+    justify-content: center;
+    text-align: center;
+    white-space: normal;
+  }
+
+  .admin-booking-code {
+    color: var(--gold-strong);
+    font-size: 1rem;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-booking-customer {
+    display: grid;
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+
+  .admin-booking-customer strong {
+    font-size: 1.04rem;
+  }
+
+  .admin-booking-customer span {
+    overflow-wrap: anywhere;
+  }
+
+  .admin-booking-details {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 10px 0;
+    border-top: 1px solid rgba(201, 163, 91, 0.14);
+    border-bottom: 1px solid rgba(201, 163, 91, 0.14);
+  }
+
+  .admin-booking-details span {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    color: rgba(245, 240, 230, 0.9);
+    font-size: 0.94rem;
+  }
+
+  .admin-booking-details b {
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  .admin-booking-card .admin-action-group {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .admin-booking-card .admin-action-btn {
+    width: 100%;
+    min-height: 42px;
+  }
+
+  .admin-booking-card .admin-payment-note {
+    text-align: center;
+  }
 }
 
 @media (max-width: 920px) {
@@ -1166,6 +1508,24 @@
   .admin-heading {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .admin-contact-meta {
+    flex-direction: column;
+  }
+
+  .admin-contact-meta time {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-bar-row {
+    grid-template-columns: 1fr 42px;
+  }
+
+  .admin-bar-label {
+    grid-column: 1 / -1;
   }
 }
 

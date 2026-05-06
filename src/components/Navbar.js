@@ -4,9 +4,11 @@ import {
   NavLink,
 } from "https://esm.sh/react-router-dom@6.28.0?deps=react@18.2.0,react-dom@18.2.0";
 import { useAuth } from "../context/AuthContext.js";
+import { isAdminUser } from "../lib/supabase.js";
 
 export function Navbar() {
   const { user, logout } = useAuth();
+  const isAdmin = isAdminUser(user);
 
   const navItemClass = ({ isActive }) =>
     isActive ? "nav-link active" : "nav-link";
@@ -17,30 +19,44 @@ export function Navbar() {
     React.createElement(
       "div",
       { className: "container nav-wrap" },
-      React.createElement(Link, { to: "/", className: "brand" }, "EMBER BBQ"),
+      React.createElement(
+        Link,
+        { to: isAdmin ? "/admin" : "/", className: "brand" },
+        "EMBER BBQ",
+      ),
       React.createElement(
         "nav",
         { className: "main-nav" },
-        React.createElement(
-          NavLink,
-          { to: "/", className: navItemClass },
-          "Trang chủ",
-        ),
-        React.createElement(
-          NavLink,
-          { to: "/thuc-don", className: navItemClass },
-          "Thực đơn",
-        ),
-        React.createElement(
-          NavLink,
-          { to: "/lien-he", className: navItemClass },
-          "Liên hệ",
-        ),
-        React.createElement(
-          NavLink,
-          { to: "/dat-ban", className: navItemClass },
-          "Đặt bàn",
-        ),
+        isAdmin
+          ? React.createElement(
+              NavLink,
+              { to: "/admin", className: navItemClass },
+              "Quản trị",
+            )
+          : React.createElement(
+              React.Fragment,
+              null,
+              React.createElement(
+                NavLink,
+                { to: "/", className: navItemClass },
+                "Trang chủ",
+              ),
+              React.createElement(
+                NavLink,
+                { to: "/thuc-don", className: navItemClass },
+                "Thực đơn",
+              ),
+              React.createElement(
+                NavLink,
+                { to: "/lien-he", className: navItemClass },
+                "Liên hệ",
+              ),
+              React.createElement(
+                NavLink,
+                { to: "/dat-ban", className: navItemClass },
+                "Đặt bàn",
+              ),
+            ),
       ),
       React.createElement(
         "div",
@@ -51,8 +67,8 @@ export function Navbar() {
               null,
               React.createElement(
                 Link,
-                { to: "/dashboard", className: "ghost-link" },
-                user.name,
+                { to: isAdmin ? "/admin" : "/dashboard", className: "ghost-link" },
+                isAdmin ? `Admin: ${user.email || user.name}` : user.name,
               ),
               React.createElement(
                 "button",
