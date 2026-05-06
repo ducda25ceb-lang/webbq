@@ -16,6 +16,11 @@ const BOOKING_SELECT =
 const CONTACT_SELECT = "id, name, email, message, created_at";
 const DEPOSIT_AMOUNT = 100000;
 const LEGACY_PENDING_STATUS = "Đang chờ";
+const BOOKING_REVIEW_TABS = [
+  { value: "pending", label: "Chưa duyệt" },
+  { value: "confirmed", label: "Đã duyệt" },
+  { value: "cancelled", label: "Đã hủy" },
+];
 
 function getLocalDateValue(date = new Date()) {
   const year = date.getFullYear();
@@ -128,6 +133,18 @@ function getStatusClass(status) {
   return "is-pending";
 }
 
+function getReviewTabForStatus(status) {
+  if (status === BOOKING_STATUS_CONFIRMED) {
+    return "confirmed";
+  }
+
+  if (status === BOOKING_STATUS_CANCELLED) {
+    return "cancelled";
+  }
+
+  return "pending";
+}
+
 export function AdminPage() {
   const { user } = useAuth();
   const [bookings, setBookings] = React.useState([]);
@@ -139,11 +156,34 @@ export function AdminPage() {
   const [actionMsg, setActionMsg] = React.useState("");
   const [busyId, setBusyId] = React.useState("");
   const [replyTextByContact, setReplyTextByContact] = React.useState({});
+  const [bookingReviewTab, setBookingReviewTab] = React.useState("pending");
   const adminEmailsText = ADMIN_EMAILS.join(", ");
 
   const activeBookings = React.useMemo(
     () => bookings.filter((booking) => booking.status !== BOOKING_STATUS_CANCELLED),
     [bookings],
+  );
+
+  const bookingReviewCounts = React.useMemo(
+    () =>
+      BOOKING_REVIEW_TABS.reduce(
+        (counts, tab) => ({
+          ...counts,
+          [tab.value]: bookings.filter(
+            (booking) => getReviewTabForStatus(booking.status) === tab.value,
+          ).length,
+        }),
+        {},
+      ),
+    [bookings],
+  );
+
+  const reviewBookings = React.useMemo(
+    () =>
+      bookings.filter(
+        (booking) => getReviewTabForStatus(booking.status) === bookingReviewTab,
+      ),
+    [bookingReviewTab, bookings],
   );
 
   const stats = React.useMemo(() => {
@@ -673,6 +713,32 @@ export function AdminPage() {
           "Admin được chấp nhận đặt cọc/xác nhận bàn hoặc hủy bàn của khách.",
         ),
       ),
+      React.createElement(
+        "div",
+        { className: "admin-review-tabs", role: "tablist" },
+        BOOKING_REVIEW_TABS.map((tab) =>
+          React.createElement(
+            "button",
+            {
+              key: tab.value,
+              type: "button",
+              role: "tab",
+              className:
+                bookingReviewTab === tab.value
+                  ? "admin-review-tab active"
+                  : "admin-review-tab",
+              "aria-selected": bookingReviewTab === tab.value,
+              onClick: () => setBookingReviewTab(tab.value),
+            },
+            React.createElement("span", null, tab.label),
+            React.createElement(
+              "strong",
+              null,
+              String(bookingReviewCounts[tab.value] || 0),
+            ),
+          ),
+        ),
+      ),
       loading
         ? React.createElement("p", null, "Đang tải danh sách đặt bàn...")
         : React.createElement(
@@ -699,8 +765,8 @@ export function AdminPage() {
             React.createElement(
               "tbody",
               null,
-              bookings.length
-                ? bookings.map((booking) =>
+              reviewBookings.length
+                ? reviewBookings.map((booking) =>
                     React.createElement(
                       "tr",
                       { key: booking.id },
@@ -752,7 +818,7 @@ export function AdminPage() {
                     React.createElement(
                       "td",
                       { colSpan: 7, className: "muted" },
-                      "Chưa có đơn đặt bàn nào.",
+                      "Không có đơn đặt bàn trong mục này.",
                     ),
                   ),
             ),
@@ -760,8 +826,8 @@ export function AdminPage() {
             React.createElement(
               "div",
               { className: "admin-booking-card-list" },
-              bookings.length
-                ? bookings.map((booking) =>
+              reviewBookings.length
+                ? reviewBookings.map((booking) =>
                     React.createElement(
                       "article",
                       { key: booking.id, className: "admin-booking-card" },
@@ -825,7 +891,7 @@ export function AdminPage() {
                 : React.createElement(
                     "p",
                     { className: "muted" },
-                    "Chưa có đơn đặt bàn nào.",
+                    "Không có đơn đặt bàn trong mục này.",
                   ),
             ),
           ),
