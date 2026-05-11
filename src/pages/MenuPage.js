@@ -17,6 +17,8 @@ const quickTags = [
 
 const fallbackDishImage =
   "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1200&auto=format&fit=crop";
+const menuHeroImage =
+  "https://images.unsplash.com/photo-1600565193348-f74bd3c7ccdf?q=80&w=1200&auto=format&fit=crop";
 
 const INITIAL_VISIBLE_ITEMS = 8;
 const COMMENT_PAGE_SIZE = 4;
@@ -304,7 +306,7 @@ export function MenuPage() {
 
   return React.createElement(
     "div",
-    { className: "container section" },
+    { className: "container section menu-page" },
     React.createElement("h1", { className: "reveal" }, "Thực Đơn BBQ"),
     React.createElement(
       "div",
@@ -349,6 +351,15 @@ export function MenuPage() {
           ),
         ),
       ),
+    ),
+    React.createElement(
+      "figure",
+      { className: "menu-corner-fire reveal" },
+      React.createElement("img", {
+        src: menuHeroImage,
+        alt: "Đầu bếp biểu diễn lửa trên chảo trong bếp BBQ",
+        loading: "eager",
+      }),
     ),
     React.createElement(
       "section",
