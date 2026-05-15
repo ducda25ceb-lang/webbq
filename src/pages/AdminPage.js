@@ -14,6 +14,7 @@ import { useAuth } from "../context/AuthContext.js";
 const BOOKING_SELECT =
   "id, booking_code, customer_name, customer_email, phone, booking_date, booking_time, guests, status, created_at";
 const CONTACT_SELECT = "id, name, email, message, created_at";
+const CONTACT_PAGE_SIZE = 20;
 const DEPOSIT_AMOUNT = 100000;
 const LEGACY_PENDING_STATUS = "Đang chờ";
 const BOOKING_REVIEW_TABS = [
@@ -149,6 +150,7 @@ export function AdminPage() {
   const { user } = useAuth();
   const [bookings, setBookings] = React.useState([]);
   const [contacts, setContacts] = React.useState([]);
+  const [hasMoreContacts, setHasMoreContacts] = React.useState(false);
   const [loading, setLoading] = React.useState(isSupabaseConfigured);
   const [contactsLoading, setContactsLoading] = React.useState(isSupabaseConfigured);
   const [error, setError] = React.useState("");
@@ -156,6 +158,7 @@ export function AdminPage() {
   const [actionMsg, setActionMsg] = React.useState("");
   const [busyId, setBusyId] = React.useState("");
   const [replyTextByContact, setReplyTextByContact] = React.useState({});
+  const [activeReplyContactId, setActiveReplyContactId] = React.useState("");
   const [bookingReviewTab, setBookingReviewTab] = React.useState("pending");
   const adminEmailsText = ADMIN_EMAILS.join(", ");
 
@@ -339,9 +342,10 @@ export function AdminPage() {
     setLoading(false);
   }, []);
 
-  const loadContacts = React.useCallback(async () => {
+  const loadContacts = React.useCallback(async ({ reset = true } = {}) => {
     if (!isSupabaseConfigured) {
       setContacts([]);
+      setHasMoreContacts(false);
       setContactsLoading(false);
       setContactError("Tin nhắn liên hệ cần Supabase để tải dữ liệu thật.");
       return;
@@ -350,21 +354,28 @@ export function AdminPage() {
     setContactsLoading(true);
     setContactError("");
 
+    const from = reset ? 0 : contacts.length;
+    const to = from + CONTACT_PAGE_SIZE - 1;
     const { data, error: loadError } = await supabase
       .from("contact_requests")
-      .select(CONTACT_SELECT)
-      .order("created_at", { ascending: false });
+      .select(CONTACT_SELECT, { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range(from, to);
 
     if (loadError) {
-      setContacts([]);
+      if (reset) {
+        setContacts([]);
+        setHasMoreContacts(false);
+      }
       setContactError(loadError.message);
       setContactsLoading(false);
       return;
     }
 
-    setContacts(data || []);
+    setContacts((current) => (reset ? data || [] : [...current, ...(data || [])]));
+    setHasMoreContacts(((data || []).length === CONTACT_PAGE_SIZE));
     setContactsLoading(false);
-  }, []);
+  }, [contacts.length]);
 
   React.useEffect(() => {
     loadBookings();
@@ -373,7 +384,12 @@ export function AdminPage() {
 
   const refreshAdminData = () => {
     loadBookings();
-    loadContacts();
+    setActiveReplyContactId("");
+    loadContacts({ reset: true });
+  };
+
+  const loadMoreContacts = () => {
+    loadContacts({ reset: false });
   };
 
   const updateBookingStatus = async (booking, status) => {
