@@ -92,6 +92,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 
 .nav-signup-link {
@@ -490,6 +491,20 @@
   .ghost-btn,
   .nav-signup-link {
     white-space: nowrap;
+  }
+
+  .auth-area {
+    flex: 1 1 0;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+
+  .auth-area .ghost-link {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    font-size: 0.78rem;
   }
 }
 

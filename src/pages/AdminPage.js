@@ -7,7 +7,9 @@ import {
   BOOKING_STATUS_PAYMENT_REVIEW,
   BOOKING_STATUS_PENDING_ADMIN,
   BOOKING_STATUS_PENDING_QR,
+  PAYMENT_STATUS_CANCELLED,
   PAYMENT_STATUS_PAID,
+  PAYMENT_STATUS_PENDING,
   PAYMENT_STATUS_REVIEW,
   isSupabaseConfigured,
   sendBookingConfirmationEmail,
@@ -24,6 +26,16 @@ const BOOKING_REVIEW_TABS = [
   { value: "pending", label: "Chưa duyệt" },
   { value: "confirmed", label: "Đã duyệt" },
   { value: "cancelled", label: "Đã hủy" },
+];
+const BOOKING_DATE_FILTERS = [
+  { value: "all", label: "Tất cả" },
+  { value: "today", label: "Hôm nay" },
+  { value: "upcoming", label: "Sắp tới" },
+];
+const ADMIN_WORKSPACE_TABS = [
+  { value: "overview", label: "Tổng quan", detail: "Số liệu và biểu đồ" },
+  { value: "bookings", label: "Đặt bàn", detail: "Duyệt cọc, xác nhận, hủy bàn" },
+  { value: "contacts", label: "Liên hệ", detail: "Tin nhắn và phản hồi khách" },
 ];
 
 function getLocalDateValue(date = new Date()) {
@@ -146,6 +158,65 @@ function getStatusClass(status) {
   return "is-pending";
 }
 
+function getPaymentClass(booking) {
+  if (
+    booking.payment_status === PAYMENT_STATUS_PAID ||
+    booking.status === BOOKING_STATUS_CONFIRMED
+  ) {
+    return "is-paid";
+  }
+
+  if (
+    booking.payment_status === PAYMENT_STATUS_REVIEW ||
+    booking.status === BOOKING_STATUS_PAYMENT_REVIEW
+  ) {
+    return "is-review";
+  }
+
+  if (
+    booking.payment_status === PAYMENT_STATUS_CANCELLED ||
+    booking.status === BOOKING_STATUS_CANCELLED
+  ) {
+    return "is-cancelled";
+  }
+
+  return "is-pending";
+}
+
+function getPaymentLabel(booking) {
+  return booking.payment_status || PAYMENT_STATUS_PENDING;
+}
+
+function isBookingInDateFilter(booking, filterValue) {
+  if (filterValue === "today") {
+    return booking.booking_date === getLocalDateValue();
+  }
+
+  if (filterValue === "upcoming") {
+    return booking.booking_date >= getLocalDateValue();
+  }
+
+  return true;
+}
+
+function matchesBookingSearch(booking, searchValue) {
+  const keyword = searchValue.trim().toLowerCase();
+
+  if (!keyword) {
+    return true;
+  }
+
+  return [
+    booking.booking_code,
+    booking.customer_name,
+    booking.customer_email,
+    booking.phone,
+    booking.payment_code,
+  ]
+    .filter(Boolean)
+    .some((value) => String(value).toLowerCase().includes(keyword));
+}
+
 function getReviewTabForStatus(status) {
   if (status === BOOKING_STATUS_CONFIRMED) {
     return "confirmed";
@@ -171,7 +242,10 @@ export function AdminPage() {
   const [busyId, setBusyId] = React.useState("");
   const [replyTextByContact, setReplyTextByContact] = React.useState({});
   const [activeReplyContactId, setActiveReplyContactId] = React.useState("");
+  const [activeAdminSection, setActiveAdminSection] = React.useState("overview");
   const [bookingReviewTab, setBookingReviewTab] = React.useState("pending");
+  const [bookingDateFilter, setBookingDateFilter] = React.useState("all");
+  const [bookingSearch, setBookingSearch] = React.useState("");
   const adminEmailsText = ADMIN_EMAILS.join(", ");
 
   const activeBookings = React.useMemo(
@@ -199,6 +273,16 @@ export function AdminPage() {
         (booking) => getReviewTabForStatus(booking.status) === bookingReviewTab,
       ),
     [bookingReviewTab, bookings],
+  );
+
+  const filteredReviewBookings = React.useMemo(
+    () =>
+      reviewBookings.filter(
+        (booking) =>
+          isBookingInDateFilter(booking, bookingDateFilter) &&
+          matchesBookingSearch(booking, bookingSearch),
+      ),
+    [bookingDateFilter, bookingSearch, reviewBookings],
   );
 
   const stats = React.useMemo(() => {
@@ -533,7 +617,7 @@ export function AdminPage() {
     setContactError("");
   };
 
-  const renderBookingActions = (booking) =>
+  const renderBookingActions = (booking, { showNotes = true } = {}) =>
     React.createElement(
       "div",
       { className: "admin-action-group" },
@@ -573,21 +657,38 @@ export function AdminPage() {
             "Hủy bàn",
           )
         : null,
-      booking.status === BOOKING_STATUS_PENDING_QR
+      showNotes && booking.status === BOOKING_STATUS_PENDING_QR
         ? React.createElement(
             "span",
             { className: "muted admin-payment-note" },
             "Khách chưa hoàn tất thanh toán SePay",
           )
         : null,
-      booking.payment_status
+      showNotes && booking.payment_status
         ? React.createElement(
             "span",
-            { className: "muted admin-payment-note" },
+            { className: "muted admin-payment-note admin-payment-code-note" },
             `Cọc: ${booking.payment_status}${booking.payment_code ? ` | ${booking.payment_code}` : ""}`,
           )
         : null,
     );
+
+  const renderPaymentBadge = (booking) =>
+    React.createElement(
+      "span",
+      { className: `admin-payment-pill ${getPaymentClass(booking)}` },
+      getPaymentLabel(booking),
+    );
+
+  const adminWorkspaceTabs = ADMIN_WORKSPACE_TABS.map((tab) => {
+    const counts = {
+      overview: activeBookings.length,
+      bookings: bookings.length,
+      contacts: contacts.length,
+    };
+
+    return { ...tab, count: counts[tab.value] || 0 };
+  });
 
   return React.createElement(
     "div",
@@ -626,6 +727,43 @@ export function AdminPage() {
     actionMsg
       ? React.createElement("p", { className: "success-msg" }, actionMsg)
       : null,
+    React.createElement(
+      "nav",
+      { className: "admin-workspace-tabs", "aria-label": "Nghiệp vụ quản trị" },
+      adminWorkspaceTabs.map((tab) =>
+        React.createElement(
+          "button",
+          {
+            key: tab.value,
+            type: "button",
+            className:
+              activeAdminSection === tab.value
+                ? "admin-workspace-tab active"
+                : "admin-workspace-tab",
+            onClick: () => setActiveAdminSection(tab.value),
+          },
+          React.createElement(
+            "span",
+            { className: "admin-workspace-tab-label" },
+            tab.label,
+          ),
+          React.createElement(
+            "span",
+            { className: "admin-workspace-tab-detail" },
+            tab.detail,
+          ),
+          React.createElement(
+            "strong",
+            null,
+            String(tab.count),
+          ),
+        ),
+      ),
+    ),
+    activeAdminSection === "overview"
+      ? React.createElement(
+          React.Fragment,
+          null,
     React.createElement(
       "section",
       { className: "admin-stats-grid", "aria-label": "Thống kê đặt bàn" },
@@ -792,7 +930,10 @@ export function AdminPage() {
         ),
       ),
     ),
-    React.createElement(
+        )
+      : null,
+    activeAdminSection === "bookings"
+      ? React.createElement(
       "div",
       { className: "panel table-wrap admin-table-panel" },
       React.createElement(
@@ -831,6 +972,45 @@ export function AdminPage() {
           ),
         ),
       ),
+      React.createElement(
+        "div",
+        { className: "admin-booking-toolbar" },
+        React.createElement("input", {
+          className: "admin-search-input",
+          type: "search",
+          placeholder: "Tìm mã đơn, khách, SĐT, mã cọc...",
+          value: bookingSearch,
+          onChange: (event) => setBookingSearch(event.target.value),
+        }),
+        React.createElement(
+          "div",
+          {
+            className: "admin-date-filter-row",
+            role: "group",
+            "aria-label": "Lọc ngày đặt bàn",
+          },
+          BOOKING_DATE_FILTERS.map((filter) =>
+            React.createElement(
+              "button",
+              {
+                key: filter.value,
+                type: "button",
+                className:
+                  bookingDateFilter === filter.value
+                    ? "admin-date-filter active"
+                    : "admin-date-filter",
+                onClick: () => setBookingDateFilter(filter.value),
+              },
+              filter.label,
+            ),
+          ),
+        ),
+        React.createElement(
+          "span",
+          { className: "admin-result-count" },
+          `${filteredReviewBookings.length}/${reviewBookings.length} đơn`,
+        ),
+      ),
       loading
         ? React.createElement("p", null, "Đang tải danh sách đặt bàn...")
         : React.createElement(
@@ -858,37 +1038,53 @@ export function AdminPage() {
             React.createElement(
               "tbody",
               null,
-              reviewBookings.length
-                ? reviewBookings.map((booking) =>
+              filteredReviewBookings.length
+                ? filteredReviewBookings.map((booking) =>
                     React.createElement(
                       "tr",
                       { key: booking.id },
-                      React.createElement("td", null, booking.booking_code),
                       React.createElement(
                         "td",
                         null,
-                        booking.customer_name || "Khách",
-                      ),
-                      React.createElement(
-                        "td",
-                        null,
-                        React.createElement("div", null, booking.phone),
                         React.createElement(
-                          "span",
-                          { className: "muted admin-email-cell" },
-                          booking.customer_email || "Không có email",
+                          "strong",
+                          { className: "admin-booking-code" },
+                          booking.booking_code,
                         ),
                       ),
                       React.createElement(
                         "td",
                         null,
+                        React.createElement(
+                          "div",
+                          { className: "admin-booking-primary" },
+                          React.createElement(
+                            "strong",
+                            null,
+                            booking.customer_name || "Khách",
+                          ),
+                          React.createElement(
+                            "span",
+                            { className: "muted" },
+                            booking.customer_email || "Không có email",
+                          ),
+                        ),
+                      ),
+                      React.createElement(
+                        "td",
+                        { className: "admin-booking-contact" },
+                        booking.phone || "Chưa có",
+                      ),
+                      React.createElement(
+                        "td",
+                        { className: "admin-datetime-cell" },
                         `${formatAdminDate(booking.booking_date)} - ${booking.booking_time}`,
                       ),
                       React.createElement("td", null, booking.guests),
                       React.createElement(
                         "td",
-                        null,
-                        React.createElement("div", null, booking.payment_status || "Chưa có"),
+                        { className: "admin-payment-stack" },
+                        renderPaymentBadge(booking),
                         booking.payment_code
                           ? React.createElement(
                               "span",
@@ -913,7 +1109,7 @@ export function AdminPage() {
                       React.createElement(
                         "td",
                         null,
-                        renderBookingActions(booking),
+                        renderBookingActions(booking, { showNotes: false }),
                       ),
                     ),
                   )
@@ -923,7 +1119,9 @@ export function AdminPage() {
                     React.createElement(
                       "td",
                       { colSpan: 8, className: "muted" },
-                      "Không có đơn đặt bàn trong mục này.",
+                      reviewBookings.length
+                        ? "Không có đơn khớp bộ lọc."
+                        : "Không có đơn đặt bàn trong mục này.",
                     ),
                   ),
             ),
@@ -931,8 +1129,8 @@ export function AdminPage() {
             React.createElement(
               "div",
               { className: "admin-booking-card-list" },
-              reviewBookings.length
-                ? reviewBookings.map((booking) =>
+              filteredReviewBookings.length
+                ? filteredReviewBookings.map((booking) =>
                     React.createElement(
                       "article",
                       { key: booking.id, className: "admin-booking-card" },
@@ -993,7 +1191,7 @@ export function AdminPage() {
                           "span",
                           null,
                           React.createElement("b", null, "Cọc"),
-                          booking.payment_status || "Chưa có",
+                          renderPaymentBadge(booking),
                         ),
                       ),
                       renderBookingActions(booking),
@@ -1002,12 +1200,16 @@ export function AdminPage() {
                 : React.createElement(
                     "p",
                     { className: "muted" },
-                    "Không có đơn đặt bàn trong mục này.",
+                    reviewBookings.length
+                      ? "Không có đơn khớp bộ lọc."
+                      : "Không có đơn đặt bàn trong mục này.",
                   ),
             ),
           ),
-    ),
-    React.createElement(
+    )
+      : null,
+    activeAdminSection === "contacts"
+      ? React.createElement(
       "section",
       { className: "panel admin-contact-panel" },
       React.createElement(
@@ -1099,6 +1301,7 @@ export function AdminPage() {
                   "Chưa có tin nhắn liên hệ nào.",
                 ),
           ),
-    ),
+    )
+      : null,
   );
 }
