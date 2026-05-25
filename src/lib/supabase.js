@@ -13,6 +13,7 @@ import {
   PAYMENT_STATUS_PAID,
   PAYMENT_STATUS_PENDING,
   PAYMENT_STATUS_REVIEW,
+  PAYMENT_STATUS_CANCELLED,
 } from "../constants/index.js";
 
 const config = globalThis.__SUPABASE_CONFIG__ || {};
@@ -36,6 +37,7 @@ export {
   PAYMENT_STATUS_PAID,
   PAYMENT_STATUS_PENDING,
   PAYMENT_STATUS_REVIEW,
+  PAYMENT_STATUS_CANCELLED,
 };
 export const DEFAULT_AUTH_SETTINGS = Object.freeze({
   disableSignup: false,
@@ -77,6 +79,114 @@ async function readFunctionErrorMessage(error) {
   }
 
   return error.message || "";
+}
+
+function shouldUseDatabaseFallback(error) {
+  const message = String(error?.message || "").toLowerCase();
+
+  return (
+    message.includes("failed to send a request to the edge function") ||
+    message.includes("could not find the function") ||
+    message.includes("function not found") ||
+    message.includes("does not exist") ||
+    message.includes("edge function") ||
+    message.includes("schema cache") ||
+    message.includes("thiếu cấu hình supabase edge function")
+  );
+}
+
+async function readBookingPaymentStatusFromDatabase(bookingCode) {
+  const { data: booking, error: bookingError } = await supabase
+    .from("bookings")
+    .select(
+      "id, user_id, booking_code, customer_name, customer_email, phone, booking_date, booking_time, guests, status, deposit_amount, payment_code, payment_status, payment_expires_at, payment_confirmed_at, created_at, updated_at",
+    )
+    .eq("booking_code", bookingCode)
+    .maybeSingle();
+
+  if (bookingError) {
+    throw bookingError;
+  }
+
+  if (!booking) {
+    return { ok: true, booking: null, payment: null, fallback: true };
+  }
+
+  const { data: payment, error: paymentError } = await supabase
+    .from("payments")
+    .select(
+      "id, payment_code, status, amount, bank_code, bank_account, bank_account_name, qr_url, transfer_amount, transfer_content, paid_at, expires_at, updated_at",
+    )
+    .eq("booking_id", booking.id)
+    .maybeSingle();
+
+  if (paymentError) {
+    throw paymentError;
+  }
+
+  return { ok: true, booking, payment, fallback: true };
+}
+
+async function cancelBookingWithRpc({ bookingCode }) {
+  const { data, error } = await supabase.rpc("cancel_booking_by_code", {
+    target_booking_code: bookingCode,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  if (data?.ok === false) {
+    throw new Error(data.error || "Không thể hủy đặt bàn lúc này.");
+  }
+
+  return {
+    ok: true,
+    fallback: true,
+    message:
+      data?.message ||
+      "Đặt bàn đã được hủy. Khoản cọc sẽ không được hoàn lại theo chính sách.",
+  };
+}
+
+async function cancelBookingWithDirectUpdate({ bookingCode, userId }) {
+  const now = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("bookings")
+    .update({
+      status: BOOKING_STATUS_CANCELLED,
+      payment_status: PAYMENT_STATUS_CANCELLED,
+      admin_updated_at: now,
+      admin_updated_by: userId,
+      updated_at: now,
+    })
+    .eq("booking_code", bookingCode)
+    .eq("user_id", userId)
+    .neq("status", BOOKING_STATUS_CANCELLED)
+    .select("id, booking_code")
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    throw new Error("Không tìm thấy đơn hoặc đơn đã hủy.");
+  }
+
+  await supabase
+    .from("payments")
+    .update({
+      status: PAYMENT_STATUS_CANCELLED,
+      updated_at: now,
+    })
+    .eq("booking_id", data.id);
+
+  return {
+    ok: true,
+    fallback: true,
+    message: "Đặt bàn đã được hủy. Khoản cọc sẽ không được hoàn lại theo chính sách.",
+  };
 }
 
 function mapAuthSettings(payload) {
@@ -242,7 +352,15 @@ export async function getBookingPaymentStatus({ bookingCode }) {
     };
   }
 
-  return invokeFunction("booking-payment-status", { bookingCode });
+  try {
+    return await invokeFunction("booking-payment-status", { bookingCode });
+  } catch (statusError) {
+    if (!shouldUseDatabaseFallback(statusError)) {
+      throw statusError;
+    }
+
+    return readBookingPaymentStatusFromDatabase(bookingCode);
+  }
 }
 
 export async function finalizeBookingPayment({ bookingCode, userId }) {
@@ -344,5 +462,21 @@ export async function cancelBooking({ bookingCode, userId }) {
     throw new Error("Missing bookingCode or userId.");
   }
 
-  return invokeFunction("cancel-booking", { bookingCode, userId });
+  try {
+    return await invokeFunction("cancel-booking", { bookingCode, userId });
+  } catch (cancelError) {
+    if (!shouldUseDatabaseFallback(cancelError)) {
+      throw cancelError;
+    }
+
+    try {
+      return await cancelBookingWithRpc({ bookingCode });
+    } catch (rpcError) {
+      if (!shouldUseDatabaseFallback(rpcError)) {
+        throw rpcError;
+      }
+
+      return cancelBookingWithDirectUpdate({ bookingCode, userId });
+    }
+  }
 }

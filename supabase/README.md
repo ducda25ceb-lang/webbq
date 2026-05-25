@@ -10,6 +10,7 @@ Use this folder to create the backend for Ember BBQ.
 - `migrations/0004_booking_cancellation.sql`: releases booked slots again after a customer cancellation with lost deposit.
 - `migrations/0005_menu_comment_rating.sql`: adds a 1-5 star rating to menu comments.
 - `migrations/0008_production_payment_ops.sql`: adds admin users, payments, webhook logs, newsletter subscribers, stricter booking policies, and SePay-ready payment state.
+- `migrations/0009_cancel_booking_rpc.sql`: adds a database fallback for cancelling bookings when the Edge Function is unavailable.
 - `functions/send-booking-confirmation`: confirms a booking and sends the confirmation email.
 - `functions/create-booking-payment`: creates the booking, payment record, and SePay QR data.
 - `functions/booking-payment-status`: lets a signed-in customer/admin poll the payment state.

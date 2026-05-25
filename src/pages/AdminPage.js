@@ -539,24 +539,26 @@ export function AdminPage() {
       { className: "admin-action-group" },
       booking.status !== BOOKING_STATUS_CONFIRMED &&
         booking.status !== BOOKING_STATUS_CANCELLED
-        ? React.createElement(
-            "button",
-            {
-              type: "button",
-              className: "btn-gold admin-action-btn",
-              disabled:
-                busyId === booking.id ||
-                (
-                  booking.payment_status !== PAYMENT_STATUS_PAID &&
-                  booking.status !== BOOKING_STATUS_PAYMENT_REVIEW
-                ),
-              onClick: () =>
-                updateBookingStatus(booking, BOOKING_STATUS_CONFIRMED),
-            },
-            booking.payment_status === PAYMENT_STATUS_PAID
-              ? "Duyệt bàn"
-              : "Chờ cọc",
-          )
+        ? booking.payment_status === PAYMENT_STATUS_PAID ||
+          booking.status === BOOKING_STATUS_PAYMENT_REVIEW
+          ? React.createElement(
+              "button",
+              {
+                type: "button",
+                className: "btn-gold admin-action-btn",
+                disabled: busyId === booking.id,
+                onClick: () =>
+                  updateBookingStatus(booking, BOOKING_STATUS_CONFIRMED),
+              },
+              booking.status === BOOKING_STATUS_PAYMENT_REVIEW
+                ? "Duyệt cọc"
+                : "Duyệt bàn",
+            )
+          : React.createElement(
+              "span",
+              { className: "muted admin-payment-note" },
+              "Chờ cọc",
+            )
         : null,
       booking.status !== BOOKING_STATUS_CANCELLED
         ? React.createElement(
