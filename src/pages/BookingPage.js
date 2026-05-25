@@ -40,6 +40,15 @@ function mapBookingErrorMessage(error) {
   return message || "Không thể lưu đặt bàn. Vui lòng thử lại.";
 }
 
+function DetailRow({ label, value, isCode = false }) {
+  return React.createElement(
+    "div",
+    { className: "qr-detail-row" },
+    React.createElement("span", { className: "qr-detail-label" }, label),
+    React.createElement(isCode ? "code" : "strong", { className: "qr-detail-value" }, value)
+  );
+}
+
 export function BookingPage() {
   useScrollReveal();
   const { user } = useAuth();
@@ -78,7 +87,7 @@ export function BookingPage() {
   );
 
   useEffect(() => {
-    const interval = setInterval(() => setCurrentTime(Date.now()), 60000);
+    const interval = setInterval(() => setCurrentTime(Date.now()), 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -96,16 +105,26 @@ export function BookingPage() {
     return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(payload)}`;
   }, [configuredQrImage, form, paymentInfo?.qr_url]);
 
-  const paymentDeadlineText = useMemo(() => {
+  const paymentCountdown = useMemo(() => {
     const expiresAt = paymentInfo?.expires_at || paymentInfo?.expiresAt;
-    if (!expiresAt) return "";
+    if (!expiresAt) return null;
 
     const leftMs = new Date(expiresAt).getTime() - currentTime;
-    if (leftMs <= 0) return "Đã hết thời gian giữ bàn.";
+    if (leftMs <= 0) {
+      return {
+        expired: true,
+        label: "Đã hết thời gian giữ bàn",
+        time: "00:00",
+      };
+    }
 
     const minutes = String(Math.floor(leftMs / 60000)).padStart(2, "0");
     const seconds = String(Math.floor((leftMs % 60000) / 1000)).padStart(2, "0");
-    return `Giữ bàn còn ${minutes}:${seconds}.`;
+    return {
+      expired: false,
+      label: "Giữ bàn còn",
+      time: `${minutes}:${seconds}`,
+    };
   }, [currentTime, paymentInfo]);
 
   useEffect(() => {
@@ -346,15 +365,33 @@ export function BookingPage() {
       { className: "panel qr-panel reveal" },
       React.createElement("h2", null, "QR thanh toán"),
       React.createElement("img", { src: qrUrl, alt: "QR thanh toán" }),
-      React.createElement("p", null, `Tiền cọc cố định: ${DEPOSIT_AMOUNT.toLocaleString("vi-VN")} VND.`),
-      paymentInfo?.bank_account
-        ? React.createElement("p", { className: "muted" }, `TK nhận: ${paymentInfo.bank_account} ${paymentInfo.bank_account_name ? `- ${paymentInfo.bank_account_name}` : ""}`)
-        : React.createElement("p", { className: "muted" }, "Điền SEPAY_BANK_ACCOUNT và SEPAY_BANK_CODE trong Supabase để hiện QR SePay thật."),
-      paymentInfo?.payment_code
-        ? React.createElement("p", { className: "muted" }, `Nội dung: ${paymentInfo.payment_code}`)
+      React.createElement(
+        "div",
+        { className: "qr-payment-details" },
+        React.createElement(DetailRow, { label: "Tiền cọc", value: `${DEPOSIT_AMOUNT.toLocaleString("vi-VN")} VND` }),
+        paymentInfo?.bank_account
+          ? React.createElement(DetailRow, { label: "TK nhận", value: `${paymentInfo.bank_account}${paymentInfo.bank_account_name ? ` - ${paymentInfo.bank_account_name}` : ""}` })
+          : React.createElement("p", { className: "muted qr-setup-note" }, "QR thanh toán sẽ hiển thị sau khi nhà hàng hoàn tất kết nối ngân hàng."),
+        paymentInfo?.payment_code
+          ? React.createElement(DetailRow, { label: "Nội dung", value: paymentInfo.payment_code, isCode: true })
+          : null
+      ),
+      paymentCountdown
+        ? React.createElement(
+            "div",
+            { className: `payment-countdown${paymentCountdown.expired ? " is-expired" : ""}`, role: "timer", "aria-live": "polite" },
+            React.createElement("span", null, paymentCountdown.label),
+            React.createElement("strong", null, paymentCountdown.time)
+          )
         : null,
-      paymentDeadlineText ? React.createElement("p", { className: "slot-hint" }, paymentDeadlineText) : null,
-      submitted ? React.createElement("p", { className: "slot-hint" }, `Trạng thái thanh toán: ${paymentStatus}`) : null,
+      submitted
+        ? React.createElement(
+            "div",
+            { className: "payment-status-line" },
+            React.createElement("span", null, "Trạng thái"),
+            React.createElement("strong", null, paymentStatus)
+          )
+        : null,
       React.createElement("button", { className: "btn-gold qr-done-btn", type: "button", onClick: checkPaymentStatus, disabled: !submitted || confirmingPayment }, confirmingPayment ? "Đang kiểm tra..." : "Kiểm tra thanh toán"),
       confirmationMsg ? React.createElement("p", { className: completed ? "success-msg" : "slot-hint" }, confirmationMsg) : null,
       completed ? React.createElement("p", { className: "success-msg" }, "Đã nhận cọc. Đơn đang chờ admin duyệt.") : null

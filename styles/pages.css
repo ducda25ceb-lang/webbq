@@ -590,13 +590,122 @@
 
 .qr-panel img {
   width: 220px;
-  margin: 12px auto;
+  margin: 12px auto 16px;
   border-radius: 14px;
   border: 1px solid var(--line);
+  background: #fff;
+}
+
+.qr-payment-details {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  margin: 0 auto 14px;
+  text-align: left;
+}
+
+.qr-detail-row {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(201, 163, 91, 0.16);
+}
+
+.qr-detail-row:last-child {
+  border-bottom: 0;
+}
+
+.qr-detail-label {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.qr-detail-value {
+  min-width: 0;
+  color: var(--text);
+  font-family: "Raleway", sans-serif;
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+code.qr-detail-value {
+  display: inline-block;
+  padding: 3px 7px;
+  border-radius: 8px;
+  color: #121212;
+  background: var(--gold-strong);
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 0.9rem;
+  letter-spacing: 0;
+}
+
+.qr-setup-note {
+  margin: 0;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.payment-countdown {
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  margin: 14px auto 10px;
+  padding: 12px 14px;
+  border: 1px solid rgba(226, 187, 111, 0.38);
+  border-radius: 14px;
+  background: rgba(226, 187, 111, 0.1);
+}
+
+.payment-countdown span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.payment-countdown strong {
+  color: var(--gold-strong);
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 1.75rem;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.payment-countdown.is-expired {
+  border-color: rgba(255, 116, 116, 0.42);
+  background: rgba(255, 116, 116, 0.09);
+}
+
+.payment-countdown.is-expired strong {
+  color: #ff9a9a;
+}
+
+.payment-status-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  flex-wrap: wrap;
+}
+
+.payment-status-line strong {
+  color: var(--text);
+  overflow-wrap: anywhere;
 }
 
 .qr-done-btn {
-  margin-top: 10px;
+  margin-top: 14px;
+  min-width: 188px;
 }
 
 .qr-done-btn:disabled {
