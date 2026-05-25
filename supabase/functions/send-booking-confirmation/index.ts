@@ -6,7 +6,14 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const ADMIN_EMAILS = new Set(["ducanh12082007dn@gmail.com"]);
+function getAdminEmails() {
+  return new Set(
+    (Deno.env.get("ADMIN_EMAILS") || "ducanh12082007dn@gmail.com")
+      .split(",")
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean),
+  );
+}
 
 type BookingRow = {
   id: string;
@@ -149,7 +156,7 @@ Deno.serve(async (request) => {
       autoRefreshToken: false,
     },
   });
-  const isAdmin = ADMIN_EMAILS.has((user.email || "").trim().toLowerCase()) ||
+  const isAdmin = getAdminEmails().has((user.email || "").trim().toLowerCase()) ||
     user.user_metadata?.role === "admin" ||
     user.app_metadata?.role === "admin";
 
@@ -169,8 +176,8 @@ Deno.serve(async (request) => {
     return json(404, { error: "Booking not found." });
   }
 
-  if (!isAdmin && booking.user_id !== user.id) {
-    return json(403, { error: "You cannot confirm this booking." });
+  if (!isAdmin) {
+    return json(403, { error: "Only admin can confirm a booking." });
   }
 
   const recipient = booking.customer_email || user.email;

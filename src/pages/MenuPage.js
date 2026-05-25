@@ -39,7 +39,6 @@ const normalizeRating = (value) => {
   if (!Number.isFinite(rating)) {
     return DEFAULT_RATING;
   }
-
   return Math.min(MAX_RATING, Math.max(1, Math.round(rating)));
 };
 

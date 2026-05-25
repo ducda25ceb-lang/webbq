@@ -1044,6 +1044,11 @@
   min-width: 190px;
 }
 
+.dashboard-status-cell small {
+  display: block;
+  margin-top: 4px;
+}
+
 .dashboard-action-group {
   display: flex;
   flex-wrap: wrap;
@@ -1380,6 +1385,12 @@
   background: rgba(226, 187, 111, 0.08);
 }
 
+.admin-status-pill.is-review {
+  color: #ffd78a;
+  border-color: rgba(255, 215, 138, 0.46);
+  background: rgba(255, 215, 138, 0.1);
+}
+
 .admin-contact-panel {
   margin-top: 18px;
 }
@@ -1420,6 +1431,10 @@
   white-space: pre-wrap;
 }
 
+.admin-contact-status {
+  margin: 0 0 10px;
+}
+
 .admin-contact-card textarea {
   width: 100%;
   min-height: 108px;
@@ -1439,6 +1454,8 @@
 
 .admin-reply-link {
   display: inline-flex;
+  margin-right: 8px;
+  margin-bottom: 8px;
 }
 
 @media (max-width: 760px) {

@@ -9,7 +9,12 @@ Use this folder to create the backend for Ember BBQ.
 - `migrations/0003_booking_confirmation_email.sql`: adds timestamps for the post-QR confirmation email flow.
 - `migrations/0004_booking_cancellation.sql`: releases booked slots again after a customer cancellation with lost deposit.
 - `migrations/0005_menu_comment_rating.sql`: adds a 1-5 star rating to menu comments.
+- `migrations/0008_production_payment_ops.sql`: adds admin users, payments, webhook logs, newsletter subscribers, stricter booking policies, and SePay-ready payment state.
 - `functions/send-booking-confirmation`: confirms a booking and sends the confirmation email.
+- `functions/create-booking-payment`: creates the booking, payment record, and SePay QR data.
+- `functions/booking-payment-status`: lets a signed-in customer/admin poll the payment state.
+- `functions/sepay-webhook`: receives SePay transaction webhooks and marks deposits as paid or needing review.
+- `functions/cancel-booking`: cancels bookings through a server-owned action.
 
 ## How to use
 
@@ -49,11 +54,28 @@ The frontend expects these tables:
   - `email`
   - `message`
   - `created_at`
+- `payments`
+  - `booking_id`
+  - `payment_code`
+  - `status`
+  - `amount`
+  - `qr_url`
+  - `paid_at`
+- `payment_webhook_events`
+  - `provider_transaction_id`
+  - `payment_code`
+  - `raw_payload`
+  - `status`
+- `newsletter_subscribers`
+  - `email`
+  - `source`
+  - `status`
 
 ## Important
 
 - Keep RLS enabled.
-- Only authenticated users should be able to insert and read their own bookings.
+- Only authenticated users should be able to read their own bookings.
+- Booking creation, payment confirmation, and cancellation should go through Edge Functions.
 - Menu comments are public read/write (anon + authenticated).
 - Contact requests are insertable by everyone and readable by authenticated users.
 - The frontend already falls back to mock data when Supabase is not configured.
@@ -73,6 +95,36 @@ To enable it:
 5. Return to the app and use "Đăng ký với Google" or "Tiếp tục với Google".
 
 If a user already has an email/password account, the dashboard shows a "Liên kết Google" button. That calls `supabase.auth.linkIdentity({ provider: "google" })` so the same Supabase user can sign in with Google later.
+
+## SePay Payment Flow
+
+Production booking flow:
+
+1. Customer signs in and submits booking details.
+2. `create-booking-payment` creates a booking and `payments` row.
+3. The frontend shows a dynamic SePay QR with fixed `100000` VND deposit.
+4. SePay calls `sepay-webhook` when money reaches the bank account.
+5. The webhook validates auth, amount, account, and payment code.
+6. Matching payments move to `Đã nhận tiền`; bookings move to `Chờ admin xác nhận`.
+7. Admin approves from `/admin`.
+8. `send-booking-confirmation` sends the customer confirmation email.
+
+Required secrets:
+
+```bash
+supabase secrets set SEPAY_BANK_ACCOUNT=...
+supabase secrets set SEPAY_BANK_CODE=...
+supabase secrets set SEPAY_BANK_ACCOUNT_NAME=...
+supabase secrets set SEPAY_WEBHOOK_SECRET=...
+```
+
+Webhook URL:
+
+```text
+https://YOUR_PROJECT_ID.functions.supabase.co/sepay-webhook
+```
+
+Full setup checklist: [../docs/01-start-here.md](../docs/01-start-here.md).
 
 ## Booking Confirmation Email
 

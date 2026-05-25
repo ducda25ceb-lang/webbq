@@ -4,7 +4,7 @@ import {
   NavLink,
 } from "https://esm.sh/react-router-dom@6.28.0?deps=react@18.2.0,react-dom@18.2.0";
 import { useAuth } from "../context/AuthContext.js";
-import { isAdminUser } from "../lib/supabase.js";
+import { isAdminUser } from "../config/admin.js";
 
 export function Navbar() {
   const { user, logout } = useAuth();

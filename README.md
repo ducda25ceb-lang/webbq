@@ -6,7 +6,7 @@ Single-page frontend for Ember BBQ restaurant with menu browsing, booking flow, 
 
 - React 18 (ES Modules via CDN)
 - React Router 6 (HashRouter)
-- Supabase for auth and booking storage when configured
+- Supabase for auth, booking storage, Edge Functions, and SePay webhook handling
 - Vanilla CSS (modular style files in `styles/`)
 
 ## Project Structure
@@ -20,6 +20,8 @@ Single-page frontend for Ember BBQ restaurant with menu browsing, booking flow, 
 - `src/data/`: mock data source
 - `styles/`: variables, base, component, page, animation styles
 - `assets/videos/`: static media assets
+- `supabase/`: database migrations and Edge Functions
+- `docs/01-start-here.md`: production setup checklist for Supabase, SePay, and Vercel
 
 ## Run Locally
 
@@ -81,7 +83,16 @@ Suggested row-level security policies:
 - Allow anon/authenticated users to select and insert `menu_comments`.
 - Allow anon/authenticated users to insert `contact_requests`.
 
-The matching SQL scaffold lives in [supabase/migrations/0001_init.sql](supabase/migrations/0001_init.sql) and setup notes are in [supabase/README.md](supabase/README.md).
+The matching SQL scaffold lives in [supabase/migrations/0001_init.sql](supabase/migrations/0001_init.sql), with production payment additions in [supabase/migrations/0008_production_payment_ops.sql](supabase/migrations/0008_production_payment_ops.sql). Setup notes are in [supabase/README.md](supabase/README.md) and [docs/01-start-here.md](docs/01-start-here.md).
+
+## Payment Flow
+
+- Deposit is fixed at `100,000 VND`.
+- Customers must sign in before booking.
+- The app creates a unique SePay payment code for each booking.
+- SePay webhook confirms the bank transfer and moves the booking to admin review.
+- Admin approves/cancels the booking from `/admin`.
+- Confirmation email is sent after admin approval.
 
 ## Routing Notes
 
@@ -94,6 +105,7 @@ The matching SQL scaffold lives in [supabase/migrations/0001_init.sql](supabase/
   - `/video`
   - `/dang-nhap`
   - `/dashboard` (protected)
+  - `/admin` (admin only)
 
 ## Repository Conventions
 

@@ -1,6 +1,6 @@
 import React from "https://esm.sh/react@18.2.0";
 import { useScrollReveal } from "../components/ScrollReveal.js";
-import { useDevicePreferences } from "../components/useDevicePreferences.js";
+import { useDevicePreferences } from "../hooks/useDevicePreferences.js";
 
 export function VideoPage() {
   useScrollReveal();

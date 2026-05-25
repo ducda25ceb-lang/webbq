@@ -5,11 +5,14 @@ import { useAuth } from "../context/AuthContext.js";
 import {
   BOOKING_STATUS_CANCELLED,
   BOOKING_STATUS_CONFIRMED,
+  BOOKING_STATUS_PENDING_ADMIN,
+  PAYMENT_STATUS_PAID,
   BOOKING_STATUS_PENDING_QR,
+} from "../constants/index.js";
+import {
   cancelBooking,
   finalizeBookingPayment,
   isSupabaseConfigured,
-  sendBookingConfirmationEmail,
   supabase,
 } from "../lib/supabase.js";
 
@@ -22,6 +25,9 @@ function formatBookingRow(row) {
     time: row.booking_time || row.time,
     guests: row.guests,
     status: row.status,
+    paymentStatus: row.payment_status,
+    paymentCode: row.payment_code,
+    paymentExpiresAt: row.payment_expires_at,
   };
 }
 
@@ -29,7 +35,6 @@ function getDisplayStatus(status, isAdmin) {
   if (isAdmin && status === BOOKING_STATUS_CANCELLED) {
     return "Đã hủy";
   }
-
   return status;
 }
 
@@ -47,13 +52,12 @@ export function DashboardPage() {
 
   const canCancelBooking = React.useCallback(
     (status) => status !== BOOKING_STATUS_CANCELLED,
-    [],
+    []
   );
 
   const canAcceptBooking = React.useCallback(
-    (status) => status !== BOOKING_STATUS_CONFIRMED &&
-      status !== BOOKING_STATUS_CANCELLED,
-    [],
+    (status) => status !== BOOKING_STATUS_CONFIRMED && status !== BOOKING_STATUS_CANCELLED,
+    []
   );
 
   const onLinkGoogleAccount = async () => {
@@ -97,7 +101,7 @@ export function DashboardPage() {
         let query = supabase
           .from("bookings")
           .select(
-            "booking_code, customer_name, customer_email, booking_date, booking_time, guests, status",
+            "booking_code, customer_name, customer_email, booking_date, booking_time, guests, status, payment_status, payment_code, payment_expires_at",
           );
 
         if (!canViewAllBookings) {
@@ -167,10 +171,21 @@ export function DashboardPage() {
             userId: user.id,
           });
 
+      if (!canViewAllBookings && result.ok === false) {
+        setActionMsg(result.message);
+        return;
+      }
+
       setBookings((current) =>
         current.map((booking) =>
           booking.bookingCode === bookingCode
-            ? { ...booking, status: BOOKING_STATUS_CONFIRMED }
+            ? {
+                ...booking,
+                status: canViewAllBookings
+                  ? BOOKING_STATUS_CONFIRMED
+                  : BOOKING_STATUS_PENDING_ADMIN,
+                paymentStatus: PAYMENT_STATUS_PAID,
+              }
             : booking,
         ),
       );
@@ -255,7 +270,20 @@ export function DashboardPage() {
     }
 
     if (status === BOOKING_STATUS_CONFIRMED) {
-      return sendBookingConfirmationEmail({ bookingCode });
+      const { data, error } = await supabase
+        .from("bookings")
+        .update({
+          status,
+          confirmed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("booking_code", bookingCode)
+        .select("booking_code")
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) throw new Error("Không tìm thấy đơn.");
+      return { ok: true, message: `Đã xác nhận đơn ${bookingCode}.` };
     }
 
     const { data, error: updateError } = await supabase
@@ -410,6 +438,13 @@ export function DashboardPage() {
                           null,
                           getDisplayStatus(booking.status, canViewAllBookings),
                         ),
+                        booking.paymentStatus
+                          ? React.createElement(
+                              "small",
+                              { className: "muted" },
+                              `Cọc: ${booking.paymentStatus}`,
+                            )
+                          : null,
                         isSupabaseConfigured
                           ? React.createElement(
                               "div",
@@ -446,8 +481,10 @@ export function DashboardPage() {
                                         confirmBooking(booking.bookingCode),
                                     },
                                     confirmingCode === booking.bookingCode
-                                      ? "Đang xác nhận..."
-                                      : "Hoàn tất QR",
+                                      ? "Đang kiểm tra..."
+                                      : booking.paymentStatus === PAYMENT_STATUS_PAID
+                                        ? "Chờ admin duyệt"
+                                        : "Kiểm tra cọc",
                                   )
                                 : null,
                               canCancelBooking(booking.status)

@@ -92,13 +92,13 @@ export function Footer() {
 
     setSubmitting(true);
     try {
-      const { error } = await supabase.from("contact_requests").insert({
-        name: "Newsletter subscriber",
+      const { error } = await supabase.from("newsletter_subscribers").insert({
         email,
-        message: "Đăng ký nhận ưu đãi từ footer",
+        source: "footer",
+        status: "active",
       });
 
-      if (error) {
+      if (error && error.code !== "23505") {
         setSubscribeMsg({
           type: "error",
           text: "Không thể đăng ký lúc này. Vui lòng thử lại sau.",

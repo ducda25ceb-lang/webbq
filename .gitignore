@@ -23,6 +23,8 @@ pnpm-debug.log*
 dist/
 build/
 .cache/
+output/
+.codex-server.pid
 
 # Dependency folders (future-proof)
 node_modules/

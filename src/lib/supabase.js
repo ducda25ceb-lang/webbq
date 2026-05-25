@@ -1,4 +1,19 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import {
+  ADMIN_EMAILS,
+  BOOKING_STATUS_CANCELLED,
+  BOOKING_STATUS_CONFIRMED,
+  BOOKING_STATUS_PAYMENT_EXPIRED,
+  BOOKING_STATUS_PAYMENT_REVIEW,
+  BOOKING_STATUS_PENDING_ADMIN,
+  BOOKING_STATUS_PENDING_QR,
+  DEPOSIT_AMOUNT,
+  PAYMENT_HOLD_MINUTES,
+  PAYMENT_STATUS_EXPIRED,
+  PAYMENT_STATUS_PAID,
+  PAYMENT_STATUS_PENDING,
+  PAYMENT_STATUS_REVIEW,
+} from "../constants/index.js";
 
 const config = globalThis.__SUPABASE_CONFIG__ || {};
 const supabaseUrl = config.url || "";
@@ -7,11 +22,21 @@ let authSettingsPromise = null;
 const POST_LOGIN_REDIRECT_KEY = "ember-bbq-post-login-path";
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
-export const BOOKING_STATUS_PENDING_QR = "Ch\u1edd thanh to\u00e1n QR";
-export const BOOKING_STATUS_PENDING_ADMIN = "Ch\u1edd admin x\u00e1c nh\u1eadn";
-export const BOOKING_STATUS_CONFIRMED = "\u0110\u00e3 x\u00e1c nh\u1eadn";
-export const BOOKING_STATUS_CANCELLED = "\u0110\u00e3 h\u1ee7y - m\u1ea5t c\u1ecdc";
-export const ADMIN_EMAILS = ["ducanh12082007dn@gmail.com"];
+export {
+  ADMIN_EMAILS,
+  BOOKING_STATUS_CANCELLED,
+  BOOKING_STATUS_CONFIRMED,
+  BOOKING_STATUS_PAYMENT_EXPIRED,
+  BOOKING_STATUS_PAYMENT_REVIEW,
+  BOOKING_STATUS_PENDING_ADMIN,
+  BOOKING_STATUS_PENDING_QR,
+  DEPOSIT_AMOUNT,
+  PAYMENT_HOLD_MINUTES,
+  PAYMENT_STATUS_EXPIRED,
+  PAYMENT_STATUS_PAID,
+  PAYMENT_STATUS_PENDING,
+  PAYMENT_STATUS_REVIEW,
+};
 export const DEFAULT_AUTH_SETTINGS = Object.freeze({
   disableSignup: false,
   emailEnabled: false,
@@ -155,6 +180,71 @@ export function consumePostLoginRedirect(user) {
   }
 }
 
+export async function invokeFunction(name, body = {}) {
+  if (!isSupabaseConfigured) {
+    throw new Error("Supabase chưa được cấu hình.");
+  }
+
+  const { data, error } = await supabase.functions.invoke(name, { body });
+
+  if (error) {
+    const detail = await readFunctionErrorMessage(error);
+    throw new Error(detail || error.message);
+  }
+
+  if (data?.ok === false) {
+    throw new Error(data.error || data.message || "Yêu cầu chưa xử lý được.");
+  }
+
+  return data;
+}
+
+export async function createBookingPayment(payload) {
+  if (!isSupabaseConfigured) {
+    const bookingCode = `EMB${Date.now().toString().slice(-6)}`;
+    const paymentCode = `EBBQ${bookingCode}`;
+
+    return {
+      ok: true,
+      booking: {
+        booking_code: bookingCode,
+        customer_name: payload.customerName,
+        booking_date: payload.bookingDate,
+        booking_time: payload.bookingTime,
+        guests: payload.guests,
+        status: BOOKING_STATUS_PENDING_QR,
+        payment_code: paymentCode,
+        payment_status: PAYMENT_STATUS_PENDING,
+        payment_expires_at: new Date(Date.now() + PAYMENT_HOLD_MINUTES * 60_000).toISOString(),
+        deposit_amount: DEPOSIT_AMOUNT,
+      },
+      payment: {
+        payment_code: paymentCode,
+        status: PAYMENT_STATUS_PENDING,
+        amount: DEPOSIT_AMOUNT,
+        qr_url: "",
+        expires_at: new Date(Date.now() + PAYMENT_HOLD_MINUTES * 60_000).toISOString(),
+      },
+      setupMissing: true,
+      message: "Đã tạo đơn mock. QR động cần Supabase và SePay.",
+    };
+  }
+
+  return invokeFunction("create-booking-payment", payload);
+}
+
+export async function getBookingPaymentStatus({ bookingCode }) {
+  if (!isSupabaseConfigured) {
+    return {
+      ok: true,
+      booking: null,
+      payment: null,
+    };
+  }
+
+  return invokeFunction("booking-payment-status", { bookingCode });
+}
+
 export async function finalizeBookingPayment({ bookingCode, userId }) {
   if (!isSupabaseConfigured) {
     return {
@@ -169,23 +259,19 @@ export async function finalizeBookingPayment({ bookingCode, userId }) {
     throw new Error("Missing bookingCode or userId.");
   }
 
-  const { data, error } = await supabase
-    .from("bookings")
-    .update({
-      status: BOOKING_STATUS_PENDING_ADMIN,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("booking_code", bookingCode)
-    .eq("user_id", userId)
-    .select("booking_code")
-    .maybeSingle();
+  const { booking, payment } = await getBookingPaymentStatus({ bookingCode });
 
-  if (error) {
-    throw error;
+  if (!booking) {
+    throw new Error("Booking not found.");
   }
 
-  if (!data) {
-    throw new Error("Booking not found.");
+  if (payment?.status !== PAYMENT_STATUS_PAID && booking.payment_status !== PAYMENT_STATUS_PAID) {
+    return {
+      ok: false,
+      emailSent: false,
+      message:
+        "Hệ thống chưa nhận được tiền cọc từ SePay. Vui lòng chuyển khoản đúng nội dung rồi chờ vài giây.",
+    };
   }
 
   return {
@@ -258,29 +344,5 @@ export async function cancelBooking({ bookingCode, userId }) {
     throw new Error("Missing bookingCode or userId.");
   }
 
-  const { data, error } = await supabase
-    .from("bookings")
-    .update({
-      status: BOOKING_STATUS_CANCELLED,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("booking_code", bookingCode)
-    .eq("user_id", userId)
-    .neq("status", BOOKING_STATUS_CANCELLED)
-    .select("booking_code")
-    .maybeSingle();
-
-  if (error) {
-    throw error;
-  }
-
-  if (!data) {
-    throw new Error("Booking not found or already cancelled.");
-  }
-
-  return {
-    ok: true,
-    message:
-      "\u0110\u1eb7t b\u00e0n \u0111\u00e3 \u0111\u01b0\u1ee3c h\u1ee7y. Kho\u1ea3n c\u1ecdc s\u1ebd kh\u00f4ng \u0111\u01b0\u1ee3c ho\u00e0n l\u1ea1i.",
-  };
+  return invokeFunction("cancel-booking", { bookingCode, userId });
 }

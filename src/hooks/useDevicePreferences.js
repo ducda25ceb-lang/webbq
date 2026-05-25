@@ -14,6 +14,10 @@ function bindMediaQuery(mediaQuery, update) {
   return () => mediaQuery.removeListener(update);
 }
 
+/**
+ * Hook để detect device preferences
+ * @returns {{ isMobile: boolean, prefersReducedMotion: boolean, saveData: boolean }}
+ */
 export function useDevicePreferences() {
   const [state, setState] = React.useState({
     isMobile: false,
@@ -28,7 +32,7 @@ export function useDevicePreferences() {
 
     const mobileQuery = window.matchMedia("(max-width: 768px)");
     const reducedMotionQuery = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
+      "(prefers-reduced-motion: reduce)"
     );
     const connection = navigator.connection;
 

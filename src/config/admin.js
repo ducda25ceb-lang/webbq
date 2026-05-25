@@ -1,4 +1,6 @@
-export const ADMIN_EMAILS = new Set(["ducanh12082007dn@gmail.com"]);
+import { ADMIN_EMAILS } from "../constants/index.js";
+
+export { ADMIN_EMAILS };
 
 export function isAdminUser(user) {
   if (!user) {
@@ -6,5 +8,5 @@ export function isAdminUser(user) {
   }
 
   const normalizedEmail = user.email?.trim().toLowerCase();
-  return user.role === "admin" || ADMIN_EMAILS.has(normalizedEmail);
+  return user.role === "admin" || ADMIN_EMAILS.includes(normalizedEmail);
 }

@@ -1,10 +1,14 @@
 import React from "https://esm.sh/react@18.2.0";
 import {
   ADMIN_EMAILS,
+  DEPOSIT_AMOUNT,
   BOOKING_STATUS_CANCELLED,
   BOOKING_STATUS_CONFIRMED,
+  BOOKING_STATUS_PAYMENT_REVIEW,
   BOOKING_STATUS_PENDING_ADMIN,
   BOOKING_STATUS_PENDING_QR,
+  PAYMENT_STATUS_PAID,
+  PAYMENT_STATUS_REVIEW,
   isSupabaseConfigured,
   sendBookingConfirmationEmail,
   supabase,
@@ -12,10 +16,9 @@ import {
 import { useAuth } from "../context/AuthContext.js";
 
 const BOOKING_SELECT =
-  "id, booking_code, customer_name, customer_email, phone, booking_date, booking_time, guests, status, created_at";
-const CONTACT_SELECT = "id, name, email, message, created_at";
+  "id, booking_code, customer_name, customer_email, phone, booking_date, booking_time, guests, status, deposit_amount, payment_code, payment_status, payment_expires_at, payment_confirmed_at, admin_note, created_at";
+const CONTACT_SELECT = "id, name, email, message, status, reply_note, replied_at, created_at";
 const CONTACT_PAGE_SIZE = 20;
-const DEPOSIT_AMOUNT = 100000;
 const LEGACY_PENDING_STATUS = "Đang chờ";
 const BOOKING_REVIEW_TABS = [
   { value: "pending", label: "Chưa duyệt" },
@@ -76,6 +79,7 @@ function isPendingBooking(status) {
   return (
     status === BOOKING_STATUS_PENDING_QR ||
     status === BOOKING_STATUS_PENDING_ADMIN ||
+    status === BOOKING_STATUS_PAYMENT_REVIEW ||
     status === LEGACY_PENDING_STATUS
   );
 }
@@ -119,6 +123,10 @@ function getAdminDisplayStatus(status) {
     return "Chờ xử lý";
   }
 
+  if (status === BOOKING_STATUS_PAYMENT_REVIEW) {
+    return "Cần kiểm tra thanh toán";
+  }
+
   return status;
 }
 
@@ -129,6 +137,10 @@ function getStatusClass(status) {
 
   if (status === BOOKING_STATUS_CANCELLED) {
     return "is-cancelled";
+  }
+
+  if (status === BOOKING_STATUS_PAYMENT_REVIEW) {
+    return "is-review";
   }
 
   return "is-pending";
@@ -203,6 +215,11 @@ export function AdminPage() {
         booking.status === BOOKING_STATUS_PENDING_QR ||
         booking.status === LEGACY_PENDING_STATUS,
     );
+    const reviewPayments = bookings.filter(
+      (booking) =>
+        booking.payment_status === PAYMENT_STATUS_REVIEW ||
+        booking.status === BOOKING_STATUS_PAYMENT_REVIEW,
+    );
     const todayBookings = activeBookings.filter(
       (booking) => booking.booking_date === today,
     );
@@ -250,6 +267,11 @@ export function AdminPage() {
         label: "Chờ thanh toán QR",
         value: String(pendingQrBookings.length),
         detail: "Khách chưa hoàn tất đặt cọc",
+      },
+      {
+        label: "Cọc cần kiểm tra",
+        value: String(reviewPayments.length),
+        detail: "Số tiền hoặc nội dung chuyển khoản chưa khớp",
       },
       {
         label: "Tuần này",
@@ -419,6 +441,11 @@ export function AdminPage() {
         .from("bookings")
         .update({
           status,
+          payment_status: PAYMENT_STATUS_PAID,
+          payment_confirmed_at: booking.payment_confirmed_at || new Date().toISOString(),
+          confirmed_at: new Date().toISOString(),
+          admin_updated_at: new Date().toISOString(),
+          admin_updated_by: user?.id || null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", booking.id);
@@ -440,6 +467,8 @@ export function AdminPage() {
         .from("bookings")
         .update({
           status,
+          admin_updated_at: new Date().toISOString(),
+          admin_updated_by: user?.id || null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", booking.id);
@@ -473,6 +502,37 @@ export function AdminPage() {
     )}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(replyText)}`;
   };
 
+  const markContactReplied = async (contact) => {
+    if (!contact?.id) {
+      return;
+    }
+
+    const replyNote = replyTextByContact[contact.id]?.trim() || contact.reply_note || "";
+    const { error: updateError } = await supabase
+      .from("contact_requests")
+      .update({
+        status: "Đã phản hồi",
+        reply_note: replyNote || null,
+        replied_at: new Date().toISOString(),
+        replied_by: user?.id || null,
+      })
+      .eq("id", contact.id);
+
+    if (updateError) {
+      setContactError(updateError.message);
+      return;
+    }
+
+    setContacts((current) =>
+      current.map((item) =>
+        item.id === contact.id
+          ? { ...item, status: "Đã phản hồi", reply_note: replyNote }
+          : item,
+      ),
+    );
+    setContactError("");
+  };
+
   const renderBookingActions = (booking) =>
     React.createElement(
       "div",
@@ -484,11 +544,18 @@ export function AdminPage() {
             {
               type: "button",
               className: "btn-gold admin-action-btn",
-              disabled: busyId === booking.id,
+              disabled:
+                busyId === booking.id ||
+                (
+                  booking.payment_status !== PAYMENT_STATUS_PAID &&
+                  booking.status !== BOOKING_STATUS_PAYMENT_REVIEW
+                ),
               onClick: () =>
                 updateBookingStatus(booking, BOOKING_STATUS_CONFIRMED),
             },
-            "Chấp nhận đặt cọc",
+            booking.payment_status === PAYMENT_STATUS_PAID
+              ? "Duyệt bàn"
+              : "Chờ cọc",
           )
         : null,
       booking.status !== BOOKING_STATUS_CANCELLED
@@ -508,7 +575,14 @@ export function AdminPage() {
         ? React.createElement(
             "span",
             { className: "muted admin-payment-note" },
-            "Khách chưa hoàn tất QR",
+            "Khách chưa hoàn tất thanh toán SePay",
+          )
+        : null,
+      booking.payment_status
+        ? React.createElement(
+            "span",
+            { className: "muted admin-payment-note" },
+            `Cọc: ${booking.payment_status}${booking.payment_code ? ` | ${booking.payment_code}` : ""}`,
           )
         : null,
     );
@@ -774,6 +848,7 @@ export function AdminPage() {
                 React.createElement("th", null, "Liên hệ"),
                 React.createElement("th", null, "Ngày giờ"),
                 React.createElement("th", null, "Số khách"),
+                React.createElement("th", null, "Cọc"),
                 React.createElement("th", null, "Trạng thái"),
                 React.createElement("th", null, "Thao tác"),
               ),
@@ -811,6 +886,18 @@ export function AdminPage() {
                       React.createElement(
                         "td",
                         null,
+                        React.createElement("div", null, booking.payment_status || "Chưa có"),
+                        booking.payment_code
+                          ? React.createElement(
+                              "span",
+                              { className: "muted admin-email-cell" },
+                              booking.payment_code,
+                            )
+                          : null,
+                      ),
+                      React.createElement(
+                        "td",
+                        null,
                         React.createElement(
                           "span",
                           {
@@ -833,7 +920,7 @@ export function AdminPage() {
                     null,
                     React.createElement(
                       "td",
-                      { colSpan: 7, className: "muted" },
+                      { colSpan: 8, className: "muted" },
                       "Không có đơn đặt bàn trong mục này.",
                     ),
                   ),
@@ -900,6 +987,12 @@ export function AdminPage() {
                           React.createElement("b", null, "Điện thoại"),
                           booking.phone || "Chưa có",
                         ),
+                        React.createElement(
+                          "span",
+                          null,
+                          React.createElement("b", null, "Cọc"),
+                          booking.payment_status || "Chưa có",
+                        ),
                       ),
                       renderBookingActions(booking),
                     ),
@@ -962,6 +1055,11 @@ export function AdminPage() {
                       { className: "admin-contact-message" },
                       contact.message,
                     ),
+                    React.createElement(
+                      "p",
+                      { className: "muted admin-contact-status" },
+                      `Trạng thái: ${contact.status || "Mới"}`,
+                    ),
                     React.createElement("textarea", {
                       rows: 4,
                       placeholder: "Nhập nội dung phản hồi trước khi mở email...",
@@ -981,6 +1079,15 @@ export function AdminPage() {
                         rel: "noopener noreferrer",
                       },
                       "Mở Gmail phản hồi",
+                    ),
+                    React.createElement(
+                      "button",
+                      {
+                        type: "button",
+                        className: "btn-outline admin-reply-link",
+                        onClick: () => markContactReplied(contact),
+                      },
+                      "Đánh dấu đã phản hồi",
                     ),
                   ),
                 )
