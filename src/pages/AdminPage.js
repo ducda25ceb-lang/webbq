@@ -1,4 +1,5 @@
 import React from "https://esm.sh/react@18.2.0";
+import { useLocation } from "https://esm.sh/react-router-dom@6.28.0?deps=react@18.2.0,react-dom@18.2.0";
 import {
   ADMIN_EMAILS,
   DEPOSIT_AMOUNT,
@@ -33,9 +34,9 @@ const BOOKING_DATE_FILTERS = [
   { value: "upcoming", label: "Sắp tới" },
 ];
 const ADMIN_WORKSPACE_TABS = [
-  { value: "overview", label: "Tổng quan", detail: "Số liệu và biểu đồ" },
-  { value: "bookings", label: "Đặt bàn", detail: "Duyệt cọc, xác nhận, hủy bàn" },
-  { value: "contacts", label: "Liên hệ", detail: "Tin nhắn và phản hồi khách" },
+  "overview",
+  "bookings",
+  "contacts",
 ];
 
 function getLocalDateValue(date = new Date()) {
@@ -231,6 +232,7 @@ function getReviewTabForStatus(status) {
 
 export function AdminPage() {
   const { user } = useAuth();
+  const location = useLocation();
   const [bookings, setBookings] = React.useState([]);
   const [contacts, setContacts] = React.useState([]);
   const [hasMoreContacts, setHasMoreContacts] = React.useState(false);
@@ -242,11 +244,14 @@ export function AdminPage() {
   const [busyId, setBusyId] = React.useState("");
   const [replyTextByContact, setReplyTextByContact] = React.useState({});
   const [activeReplyContactId, setActiveReplyContactId] = React.useState("");
-  const [activeAdminSection, setActiveAdminSection] = React.useState("overview");
   const [bookingReviewTab, setBookingReviewTab] = React.useState("pending");
   const [bookingDateFilter, setBookingDateFilter] = React.useState("all");
   const [bookingSearch, setBookingSearch] = React.useState("");
   const adminEmailsText = ADMIN_EMAILS.join(", ");
+  const activeAdminSection = React.useMemo(() => {
+    const tab = new URLSearchParams(location.search).get("tab");
+    return ADMIN_WORKSPACE_TABS.includes(tab) ? tab : "overview";
+  }, [location.search]);
 
   const activeBookings = React.useMemo(
     () => bookings.filter((booking) => booking.status !== BOOKING_STATUS_CANCELLED),
@@ -680,16 +685,6 @@ export function AdminPage() {
       getPaymentLabel(booking),
     );
 
-  const adminWorkspaceTabs = ADMIN_WORKSPACE_TABS.map((tab) => {
-    const counts = {
-      overview: activeBookings.length,
-      bookings: bookings.length,
-      contacts: contacts.length,
-    };
-
-    return { ...tab, count: counts[tab.value] || 0 };
-  });
-
   return React.createElement(
     "div",
     { className: "container section admin-page" },
@@ -727,39 +722,6 @@ export function AdminPage() {
     actionMsg
       ? React.createElement("p", { className: "success-msg" }, actionMsg)
       : null,
-    React.createElement(
-      "nav",
-      { className: "admin-workspace-tabs", "aria-label": "Nghiệp vụ quản trị" },
-      adminWorkspaceTabs.map((tab) =>
-        React.createElement(
-          "button",
-          {
-            key: tab.value,
-            type: "button",
-            className:
-              activeAdminSection === tab.value
-                ? "admin-workspace-tab active"
-                : "admin-workspace-tab",
-            onClick: () => setActiveAdminSection(tab.value),
-          },
-          React.createElement(
-            "span",
-            { className: "admin-workspace-tab-label" },
-            tab.label,
-          ),
-          React.createElement(
-            "span",
-            { className: "admin-workspace-tab-detail" },
-            tab.detail,
-          ),
-          React.createElement(
-            "strong",
-            null,
-            String(tab.count),
-          ),
-        ),
-      ),
-    ),
     activeAdminSection === "overview"
       ? React.createElement(
           React.Fragment,

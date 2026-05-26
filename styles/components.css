@@ -75,11 +75,26 @@
   gap: 12px;
 }
 
+.admin-main-nav {
+  flex: 1 1 auto;
+  justify-content: center;
+  min-width: 0;
+}
+
 .nav-link {
   padding: 8px 12px;
   border-radius: 999px;
   transition: all 0.3s ease;
   color: var(--muted);
+}
+
+.admin-nav-link {
+  flex: 0 0 auto;
+  min-width: 0;
+  border: 1px solid transparent;
+  text-align: center;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .nav-link:hover,
@@ -88,11 +103,30 @@
   background: rgba(201, 163, 91, 0.18);
 }
 
+.admin-nav-link.active {
+  border-color: rgba(226, 187, 111, 0.48);
+  color: #121212;
+  background: linear-gradient(90deg, var(--gold), var(--gold-strong));
+  box-shadow: 0 10px 24px rgba(226, 187, 111, 0.18);
+}
+
 .auth-area {
   display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
+}
+
+.admin-auth-area {
+  flex: 0 1 420px;
+  justify-content: flex-end;
+}
+
+.admin-auth-area .ghost-link {
+  max-width: min(34vw, 390px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .nav-signup-link {
@@ -482,6 +516,10 @@
     padding-bottom: 6px;
   }
 
+  .admin-main-nav {
+    justify-content: flex-start;
+  }
+
   .topbar {
     backdrop-filter: none;
   }
@@ -505,6 +543,10 @@
     white-space: normal;
     overflow-wrap: anywhere;
     font-size: 0.78rem;
+  }
+
+  .admin-auth-area {
+    flex: 1 1 0;
   }
 }
 

@@ -2,13 +2,21 @@
 import {
   Link,
   NavLink,
+  useLocation,
 } from "https://esm.sh/react-router-dom@6.28.0?deps=react@18.2.0,react-dom@18.2.0";
 import { useAuth } from "../context/AuthContext.js";
 import { isAdminUser } from "../config/admin.js";
 
 export function Navbar() {
   const { user, logout } = useAuth();
+  const location = useLocation();
   const isAdmin = isAdminUser(user);
+  const adminTab = new URLSearchParams(location.search).get("tab") || "overview";
+  const adminNavItems = [
+    { to: "/admin?tab=overview", tab: "overview", label: "Tổng quan" },
+    { to: "/admin?tab=bookings", tab: "bookings", label: "Đặt bàn" },
+    { to: "/admin?tab=contacts", tab: "contacts", label: "Liên hệ" },
+  ];
 
   const navItemClass = ({ isActive }) =>
     isActive ? "nav-link active" : "nav-link";
@@ -26,12 +34,21 @@ export function Navbar() {
       ),
       React.createElement(
         "nav",
-        { className: "main-nav" },
+        { className: isAdmin ? "main-nav admin-main-nav" : "main-nav" },
         isAdmin
-          ? React.createElement(
-              NavLink,
-              { to: "/admin", className: navItemClass },
-              "Quản trị",
+          ? adminNavItems.map((item) =>
+              React.createElement(
+                Link,
+                {
+                  key: item.tab,
+                  to: item.to,
+                  className:
+                    adminTab === item.tab
+                      ? "nav-link admin-nav-link active"
+                      : "nav-link admin-nav-link",
+                },
+                item.label,
+              ),
             )
           : React.createElement(
               React.Fragment,
@@ -60,7 +77,7 @@ export function Navbar() {
       ),
       React.createElement(
         "div",
-        { className: "auth-area" },
+        { className: isAdmin ? "auth-area admin-auth-area" : "auth-area" },
         user
           ? React.createElement(
               React.Fragment,
