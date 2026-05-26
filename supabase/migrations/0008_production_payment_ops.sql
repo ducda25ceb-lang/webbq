@@ -27,7 +27,7 @@ as $$
 $$;
 
 alter table public.bookings
-  add column if not exists deposit_amount integer not null default 100000,
+  add column if not exists deposit_amount integer not null default 20000,
   add column if not exists payment_code text unique,
   add column if not exists payment_status text not null default 'Chờ thanh toán',
   add column if not exists payment_expires_at timestamptz,

@@ -11,5 +11,5 @@ export const PAYMENT_STATUS_REVIEW = "Cần kiểm tra";
 export const PAYMENT_STATUS_EXPIRED = "Hết hạn";
 export const PAYMENT_STATUS_CANCELLED = "Đã hủy";
 
-export const DEPOSIT_AMOUNT = 100000;
+export const DEPOSIT_AMOUNT = 20000;
 export const PAYMENT_HOLD_MINUTES = 15;

@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const DEPOSIT_AMOUNT = 100000;
+const DEPOSIT_AMOUNT = 20000;
 const HOLD_MINUTES = 15;
 const BOOKING_STATUS_PENDING_QR = "Chờ thanh toán QR";
 const PAYMENT_STATUS_PENDING = "Chờ thanh toán";
