@@ -53,6 +53,7 @@ export function BookingPage() {
   useScrollReveal();
   const { user } = useAuth();
   const configuredQrImage = globalThis.__BOOKING_CONFIG__?.paymentQrImage || "";
+  const onlineBookingReady = isSupabaseConfigured;
   const [bookedSlots, setBookedSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -100,10 +101,10 @@ export function BookingPage() {
 
   const qrUrl = useMemo(() => {
     if (paymentInfo?.qr_url) return paymentInfo.qr_url;
-    if (configuredQrImage && !isSupabaseConfigured) return configuredQrImage;
+    if (configuredQrImage && !onlineBookingReady) return configuredQrImage;
     const payload = `EMBER BBQ|${form.name || "Khach"}|${form.date || "NoDate"}|${form.time}|${form.guests} khach`;
     return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(payload)}`;
-  }, [configuredQrImage, form, paymentInfo?.qr_url]);
+  }, [configuredQrImage, form, onlineBookingReady, paymentInfo?.qr_url]);
 
   const paymentCountdown = useMemo(() => {
     const expiresAt = paymentInfo?.expires_at || paymentInfo?.expiresAt;
@@ -189,45 +190,41 @@ export function BookingPage() {
       return;
     }
 
-    const generatedCode = `EMB${Date.now().toString().slice(-6)}`;
+    if (!onlineBookingReady) {
+      setBookingCode("");
+      setPaymentInfo(null);
+      setPaymentStatus(PAYMENT_STATUS_PENDING);
+      setSubmitted(false);
+      setErrorMsg("Chưa thể tạo đơn đặt bàn online vì Supabase và SePay chưa được kết nối. Vui lòng gọi hotline để giữ bàn thật.");
+      setConfirmationMsg("");
+      return;
+    }
+
     setSaving(true);
 
     try {
-      if (isSupabaseConfigured) {
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        const sessionUser = sessionData?.session?.user;
-        if (sessionError || !sessionUser) throw new Error("Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại trước khi đặt bàn.");
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      const sessionUser = sessionData?.session?.user;
+      if (sessionError || !sessionUser) throw new Error("Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại trước khi đặt bàn.");
 
-        const { data: latestBookedSlots, error: bookedSlotsError } = await supabase.rpc("get_booked_slots", { target_date: form.date });
-        if (bookedSlotsError) throw bookedSlotsError;
+      const { data: latestBookedSlots, error: bookedSlotsError } = await supabase.rpc("get_booked_slots", { target_date: form.date });
+      if (bookedSlotsError) throw bookedSlotsError;
 
-        const hasConflict = (latestBookedSlots || []).map(normalizeBookedSlot).some((slot) => slot === form.time);
-        if (hasConflict || MANUALLY_BLOCKED_SLOTS.includes(form.time)) throw new Error("SLOT_CONFLICT");
+      const hasConflict = (latestBookedSlots || []).map(normalizeBookedSlot).some((slot) => slot === form.time);
+      if (hasConflict || MANUALLY_BLOCKED_SLOTS.includes(form.time)) throw new Error("SLOT_CONFLICT");
 
-        const result = await createBookingPayment({
-          customerName: form.name.trim(),
-          phone: onlyDigitsPhone,
-          bookingDate: form.date,
-          bookingTime: form.time,
-          guests: form.guests,
-        });
+      const result = await createBookingPayment({
+        customerName: form.name.trim(),
+        phone: onlyDigitsPhone,
+        bookingDate: form.date,
+        bookingTime: form.time,
+        guests: form.guests,
+      });
 
-        setBookingCode(result.booking.booking_code);
-        setPaymentInfo(result.payment);
-        setPaymentStatus(result.payment?.status || result.booking.payment_status || PAYMENT_STATUS_PENDING);
-        setConfirmationMsg(result.setupMissing ? result.message : "");
-      } else {
-        const result = await createBookingPayment({
-          customerName: form.name.trim(),
-          phone: onlyDigitsPhone,
-          bookingDate: form.date,
-          bookingTime: form.time,
-          guests: form.guests,
-        });
-        setBookingCode(result.booking.booking_code || generatedCode);
-        setPaymentInfo(result.payment);
-        setPaymentStatus(result.payment?.status || PAYMENT_STATUS_PENDING);
-      }
+      setBookingCode(result.booking.booking_code);
+      setPaymentInfo(result.payment);
+      setPaymentStatus(result.payment?.status || result.booking.payment_status || PAYMENT_STATUS_PENDING);
+      setConfirmationMsg(result.setupMissing ? result.message : "");
 
       setErrorMsg("");
       setSubmitted(true);
@@ -244,10 +241,9 @@ export function BookingPage() {
     if (!submitted || !bookingCode || confirmingPayment) return;
 
     if (!isSupabaseConfigured) {
-      setCompleted(true);
-      setShowSuccessPopup(true);
-      setPaymentStatus(PAYMENT_STATUS_PAID);
-      setConfirmationMsg("Đã xác nhận mock. Khi cấu hình Supabase + SePay, hệ thống sẽ tự nhận tiền qua webhook.");
+      setCompleted(false);
+      setPaymentStatus(PAYMENT_STATUS_PENDING);
+      setConfirmationMsg("Chưa có kết nối Supabase/SePay nên hệ thống không thể xác nhận thanh toán online.");
       return;
     }
 
@@ -308,7 +304,11 @@ export function BookingPage() {
       React.createElement("h1", null, "Đặt Bàn"),
       isSupabaseConfigured
         ? React.createElement("p", { className: "muted" }, user ? `Đơn đặt bàn sẽ được lưu vào Supabase cho ${user.name}.` : "Hãy đăng nhập trước để đơn đặt bàn được gắn vào lịch sử của bạn.")
-        : null,
+        : React.createElement(
+            "p",
+            { className: "setup-warning" },
+            "Đặt bàn online đang ở trạng thái chưa kết nối dữ liệu thật. Form chỉ mở sau khi cấu hình Supabase và SePay.",
+          ),
       React.createElement(
         "form",
         { className: "booking-form", onSubmit },
@@ -343,7 +343,7 @@ export function BookingPage() {
               ? `Khung giờ đã qua sẽ tự động khóa. Hiện tại: ${new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}`
               : "Khung giờ đã có người đặt sẽ tự khóa để tránh trùng lịch."
         ),
-        React.createElement("button", { type: "submit", className: "btn-gold", disabled: saving }, saving ? "Đang lưu..." : "Xác nhận đặt bàn")
+        React.createElement("button", { type: "submit", className: "btn-gold", disabled: saving || !onlineBookingReady }, saving ? "Đang lưu..." : onlineBookingReady ? "Xác nhận đặt bàn" : "Chưa thể đặt online")
       ),
       errorMsg ? React.createElement("p", { className: "error-msg" }, errorMsg) : null,
       submitted
@@ -371,7 +371,7 @@ export function BookingPage() {
         React.createElement(DetailRow, { label: "Tiền cọc", value: `${DEPOSIT_AMOUNT.toLocaleString("vi-VN")} VND` }),
         paymentInfo?.bank_account
           ? React.createElement(DetailRow, { label: "TK nhận", value: `${paymentInfo.bank_account}${paymentInfo.bank_account_name ? ` - ${paymentInfo.bank_account_name}` : ""}` })
-          : React.createElement("p", { className: "muted qr-setup-note" }, "QR thanh toán sẽ hiển thị sau khi nhà hàng hoàn tất kết nối ngân hàng."),
+          : React.createElement("p", { className: "muted qr-setup-note" }, onlineBookingReady ? "QR tham khảo trước khi tạo đơn." : "QR tham khảo để giữ bố cục thanh toán."),
         paymentInfo?.payment_code
           ? React.createElement(DetailRow, { label: "Nội dung", value: paymentInfo.payment_code, isCode: true })
           : null
@@ -392,7 +392,7 @@ export function BookingPage() {
             React.createElement("strong", null, paymentStatus)
           )
         : null,
-      React.createElement("button", { className: "btn-gold qr-done-btn", type: "button", onClick: checkPaymentStatus, disabled: !submitted || confirmingPayment }, confirmingPayment ? "Đang kiểm tra..." : "Kiểm tra thanh toán"),
+      React.createElement("button", { className: "btn-gold qr-done-btn", type: "button", onClick: checkPaymentStatus, disabled: !submitted || confirmingPayment || !onlineBookingReady }, confirmingPayment ? "Đang kiểm tra..." : "Kiểm tra thanh toán"),
       confirmationMsg ? React.createElement("p", { className: completed ? "success-msg" : "slot-hint" }, confirmationMsg) : null,
       completed ? React.createElement("p", { className: "success-msg" }, "Đã nhận cọc. Đơn đang chờ admin duyệt.") : null
     ),

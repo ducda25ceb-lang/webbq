@@ -24,9 +24,8 @@ export function ContactPage() {
     }
 
     if (!isSupabaseConfigured) {
-      setErrorMsg("");
-      setSuccessMsg("Đã ghi nhận yêu cầu (chế độ mock, chưa lưu database).");
-      setForm({ name: "", email: "", message: "" });
+      setErrorMsg("Chưa thể gửi yêu cầu online vì Supabase chưa được kết nối. Vui lòng gọi hotline hoặc gửi email trực tiếp cho nhà hàng.");
+      setSuccessMsg("");
       return;
     }
 
@@ -100,6 +99,13 @@ export function ContactPage() {
         "article",
         { className: "panel" },
         React.createElement("h3", null, "Gửi yêu cầu"),
+        !isSupabaseConfigured
+          ? React.createElement(
+              "p",
+              { className: "setup-warning" },
+              "Form liên hệ đang tạm khóa để tránh ghi nhận nhầm khi database chưa sẵn sàng.",
+            )
+          : null,
         React.createElement(
           "form",
           { className: "comment-form", onSubmit: handleSubmit },
@@ -134,8 +140,8 @@ export function ContactPage() {
             : null,
           React.createElement(
             "button",
-            { className: "btn-gold", type: "submit", disabled: submitting },
-            submitting ? "Đang gửi..." : "Gửi",
+            { className: "btn-gold", type: "submit", disabled: submitting || !isSupabaseConfigured },
+            submitting ? "Đang gửi..." : isSupabaseConfigured ? "Gửi" : "Chưa thể gửi online",
           ),
         ),
       ),

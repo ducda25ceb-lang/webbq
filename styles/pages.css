@@ -572,6 +572,17 @@
   font-size: 0.9rem;
 }
 
+.setup-warning {
+  margin: 10px 0 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 215, 138, 0.42);
+  border-radius: 12px;
+  color: #ffe2a6;
+  background: rgba(255, 215, 138, 0.09);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
 .booking-result {
   margin-top: 14px;
   padding: 14px;
@@ -590,6 +601,7 @@
 
 .qr-panel img {
   width: 220px;
+  max-width: 100%;
   margin: 12px auto 16px;
   border-radius: 14px;
   border: 1px solid var(--line);
@@ -1181,6 +1193,10 @@ code.qr-detail-value {
   background: rgba(255, 159, 159, 0.14);
 }
 
+.dashboard-setup-warning {
+  margin-bottom: 16px;
+}
+
 .admin-heading {
   display: flex;
   align-items: flex-end;
@@ -1262,6 +1278,39 @@ code.qr-detail-value {
 
 .admin-section-heading p {
   margin: 0;
+}
+
+.admin-work-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 16px;
+}
+
+.admin-work-summary-item {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid rgba(201, 163, 91, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.admin-work-summary-item span,
+.admin-work-summary-item small {
+  display: block;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.admin-work-summary-item strong {
+  display: block;
+  margin: 5px 0;
+  color: #ffe2a6;
+  font-size: 1.45rem;
+  line-height: 1;
 }
 
 .admin-chart-panel {
@@ -1750,6 +1799,10 @@ code.qr-detail-value {
     overflow: visible;
   }
 
+  .admin-work-summary {
+    grid-template-columns: 1fr;
+  }
+
   .admin-booking-toolbar {
     grid-template-columns: 1fr;
     align-items: stretch;
@@ -1834,11 +1887,20 @@ code.qr-detail-value {
     gap: 12px;
     color: rgba(245, 240, 230, 0.9);
     font-size: 0.94rem;
+    min-width: 0;
   }
 
   .admin-booking-details b {
+    flex: 0 0 auto;
     color: var(--muted);
     font-weight: 600;
+  }
+
+  .admin-booking-details span > :last-child,
+  .admin-booking-details span > .admin-payment-pill {
+    min-width: 0;
+    text-align: right;
+    overflow-wrap: anywhere;
   }
 
   .admin-booking-card .admin-action-group {
@@ -1970,6 +2032,32 @@ code.qr-detail-value {
 }
 
 @media (max-width: 640px) {
+  .qr-detail-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .admin-review-tabs,
+  .admin-date-filter-row {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .admin-review-tab,
+  .admin-date-filter {
+    justify-content: space-between;
+    width: 100%;
+    border-radius: 12px;
+  }
+
+  .admin-line-chart {
+    padding: 10px;
+  }
+
+  .admin-line-chart svg {
+    min-height: 220px;
+  }
+
   .admin-bar-row {
     grid-template-columns: 1fr 42px;
   }

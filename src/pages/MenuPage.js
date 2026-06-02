@@ -244,6 +244,11 @@ export function MenuPage() {
       return;
     }
 
+    if (!isSupabaseConfigured) {
+      setCommentError("Chưa thể lưu nhận xét online vì Supabase chưa được kết nối.");
+      return;
+    }
+
     if (isSupabaseConfigured) {
       setCommentSaving(true);
       try {
@@ -288,13 +293,6 @@ export function MenuPage() {
       }
     }
 
-    setComments((prev) => [
-      { id: Date.now(), name, text, rating },
-      ...prev,
-    ]);
-    setCommentPage(1);
-    setCommentError("");
-    setForm({ name: "", text: "", rating: DEFAULT_RATING });
   };
 
   const handleImageError = (e) => {
@@ -533,6 +531,13 @@ export function MenuPage() {
       "section",
       { className: "chat-box reveal" },
       React.createElement("h2", null, "Khung chat nhận xét"),
+      !isSupabaseConfigured
+        ? React.createElement(
+            "p",
+            { className: "setup-warning" },
+            "Nhận xét đang hiển thị dữ liệu mẫu. Chỉ lưu nhận xét mới sau khi kết nối Supabase.",
+          )
+        : null,
       React.createElement(
         "form",
         { className: "comment-form", onSubmit: submitComment },
@@ -581,9 +586,9 @@ export function MenuPage() {
           {
             className: "btn-gold",
             type: "submit",
-            disabled: commentSaving,
+            disabled: commentSaving || !isSupabaseConfigured,
           },
-          commentSaving ? "Đang gửi..." : "Gửi nhận xét",
+          commentSaving ? "Đang gửi..." : isSupabaseConfigured ? "Gửi nhận xét" : "Chưa thể gửi nhận xét",
         ),
       ),
       commentError

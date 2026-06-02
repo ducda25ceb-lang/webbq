@@ -1,6 +1,5 @@
 import React from "https://esm.sh/react@18.2.0";
 import { isAdminUser } from "../config/admin.js";
-import { mockBookings } from "../data/mockData.js";
 import { useAuth } from "../context/AuthContext.js";
 import {
   BOOKING_STATUS_CANCELLED,
@@ -48,7 +47,7 @@ export function DashboardPage() {
   const [confirmingCode, setConfirmingCode] = React.useState("");
   const [cancelingCode, setCancelingCode] = React.useState("");
   const shouldUseMock = !isSupabaseConfigured;
-  const displayRows = shouldUseMock ? mockBookings : bookings;
+  const displayRows = shouldUseMock ? [] : bookings;
 
   const canCancelBooking = React.useCallback(
     (status) => status !== BOOKING_STATUS_CANCELLED,
@@ -83,7 +82,8 @@ export function DashboardPage() {
 
     async function loadBookings() {
       if (!isSupabaseConfigured) {
-        setBookings(mockBookings);
+        setBookings([]);
+        setError("Lịch sử đặt bàn thật cần Supabase. Dữ liệu mẫu đã được ẩn để tránh nhầm với đơn đang vận hành.");
         setLoading(false);
         return;
       }
@@ -379,11 +379,18 @@ export function DashboardPage() {
       "p",
       { className: "muted" },
       shouldUseMock
-        ? "Lịch sử đặt bàn (mock data sau đăng nhập)."
+        ? "Lịch sử đặt bàn online chưa khả dụng vì Supabase chưa được kết nối."
         : canViewAllBookings
           ? "Admin đang xem toàn bộ lịch đặt bàn từ Supabase."
           : "Lịch sử đặt bàn đang được tải từ Supabase.",
     ),
+    shouldUseMock
+      ? React.createElement(
+          "div",
+          { className: "setup-warning dashboard-setup-warning" },
+          "Khi cấu hình Supabase, trang này sẽ hiển thị đơn thật của khách và các thao tác kiểm tra cọc/hủy bàn.",
+        )
+      : null,
     error ? React.createElement("p", { className: "error-msg" }, error) : null,
     actionMsg
       ? React.createElement("p", { className: "success-msg" }, actionMsg)
@@ -518,7 +525,9 @@ export function DashboardPage() {
                     React.createElement(
                       "td",
                       { colSpan: 6, className: "muted" },
-                      "Chưa có lịch đặt bàn nào.",
+                      shouldUseMock
+                        ? "Chưa kết nối dữ liệu thật."
+                        : "Chưa có lịch đặt bàn nào.",
                     ),
                   ),
             ),

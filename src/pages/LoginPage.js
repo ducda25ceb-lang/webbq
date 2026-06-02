@@ -10,7 +10,6 @@ export function LoginPage() {
   const {
     authBusy,
     authSettings,
-    demoUser,
     isSupabaseConfigured,
     loading,
     login,
@@ -96,16 +95,6 @@ export function LoginPage() {
   };
 
   const heading = mode === "signup" ? "Đăng ký tài khoản" : "Đăng nhập";
-  const introText = isSupabaseConfigured
-    ? mode === "signup"
-      ? "Tạo tài khoản bằng Google để app tự lưu lịch sử đặt bàn trên Supabase."
-      : "Đăng nhập bằng Google để dùng lại đúng tài khoản và lịch sử đặt bàn đã lưu."
-    : "Đăng nhập mock để vào dashboard và xem lịch sử đặt bàn.";
-  const helperText = isSupabaseConfigured
-    ? googleEnabled
-      ? "Bạn sẽ được chuyển sang Google để xác thực, app không nhận hay lưu mật khẩu Google."
-      : "Cần bật Google provider trong Supabase Auth để dùng nút Google."
-    : `Tài khoản demo: ${demoUser.username} | Mật khẩu: ${demoUser.password}`;
   const submitLabel = isSupabaseConfigured
     ? mode === "signup"
       ? "Tạo tài khoản bằng email"
@@ -119,8 +108,6 @@ export function LoginPage() {
       "section",
       { className: "panel login-card" },
       React.createElement("h1", null, heading),
-      React.createElement("p", null, introText),
-      React.createElement("p", { className: "muted" }, helperText),
       isSupabaseConfigured
         ? React.createElement(
             "div",

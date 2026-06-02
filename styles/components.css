@@ -550,6 +550,24 @@
   }
 }
 
+@media (max-width: 640px) {
+  .main-nav {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    gap: 8px;
+    padding-bottom: 0;
+  }
+
+  .nav-link {
+    flex: 1 1 calc(50% - 8px);
+    text-align: center;
+  }
+
+  .admin-main-nav .nav-link {
+    flex: 0 0 auto;
+  }
+}
+
 @media (hover: none) and (pointer: coarse) {
   .btn-gold:hover,
   .btn-outline:hover,

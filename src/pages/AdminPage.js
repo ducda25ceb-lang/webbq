@@ -127,6 +127,14 @@ function formatContactDate(value) {
   }).format(new Date(value));
 }
 
+function formatOptionalDateTime(value) {
+  if (!value) {
+    return "Chưa có";
+  }
+
+  return formatContactDate(value);
+}
+
 function getAdminDisplayStatus(status) {
   if (status === BOOKING_STATUS_CANCELLED) {
     return "Đã hủy";
@@ -289,6 +297,39 @@ export function AdminPage() {
       ),
     [bookingDateFilter, bookingSearch, reviewBookings],
   );
+
+  const adminWorkSummary = React.useMemo(() => {
+    const today = getLocalDateValue();
+    const needsAction = bookings.filter(
+      (booking) =>
+        booking.status === BOOKING_STATUS_PENDING_ADMIN ||
+        booking.status === BOOKING_STATUS_PAYMENT_REVIEW ||
+        booking.payment_status === PAYMENT_STATUS_REVIEW,
+    ).length;
+    const todayCount = bookings.filter(
+      (booking) =>
+        booking.status !== BOOKING_STATUS_CANCELLED &&
+        booking.booking_date === today,
+    ).length;
+
+    return [
+      {
+        label: "Cần xử lý",
+        value: String(needsAction),
+        detail: "Cọc đã nhận hoặc cần kiểm tra",
+      },
+      {
+        label: "Hôm nay",
+        value: String(todayCount),
+        detail: "Đơn còn hiệu lực trong ngày",
+      },
+      {
+        label: "Đang lọc",
+        value: String(filteredReviewBookings.length),
+        detail: `${reviewBookings.length} đơn trong tab hiện tại`,
+      },
+    ];
+  }, [bookings, filteredReviewBookings.length, reviewBookings.length]);
 
   const stats = React.useMemo(() => {
     const today = getLocalDateValue();
@@ -639,9 +680,11 @@ export function AdminPage() {
                 onClick: () =>
                   updateBookingStatus(booking, BOOKING_STATUS_CONFIRMED),
               },
-              booking.status === BOOKING_STATUS_PAYMENT_REVIEW
-                ? "Duyệt cọc"
-                : "Duyệt bàn",
+              busyId === booking.id
+                ? "Đang xử lý..."
+                : booking.status === BOOKING_STATUS_PAYMENT_REVIEW
+                  ? "Duyệt cọc"
+                  : "Duyệt bàn",
             )
           : React.createElement(
               "span",
@@ -659,7 +702,7 @@ export function AdminPage() {
               onClick: () =>
                 updateBookingStatus(booking, BOOKING_STATUS_CANCELLED),
             },
-            "Hủy bàn",
+            busyId === booking.id ? "Đang xử lý..." : "Hủy bàn",
           )
         : null,
       showNotes && booking.status === BOOKING_STATUS_PENDING_QR
@@ -910,6 +953,19 @@ export function AdminPage() {
       ),
       React.createElement(
         "div",
+        { className: "admin-work-summary", "aria-label": "Tóm tắt việc cần xử lý" },
+        adminWorkSummary.map((item) =>
+          React.createElement(
+            "article",
+            { key: item.label, className: "admin-work-summary-item" },
+            React.createElement("span", null, item.label),
+            React.createElement("strong", null, loading ? "-" : item.value),
+            React.createElement("small", null, loading ? "Đang cập nhật" : item.detail),
+          ),
+        ),
+      ),
+      React.createElement(
+        "div",
         { className: "admin-review-tabs", role: "tablist" },
         BOOKING_REVIEW_TABS.map((tab) =>
           React.createElement(
@@ -1154,6 +1210,18 @@ export function AdminPage() {
                           null,
                           React.createElement("b", null, "Cọc"),
                           renderPaymentBadge(booking),
+                        ),
+                        React.createElement(
+                          "span",
+                          null,
+                          React.createElement("b", null, "Mã cọc"),
+                          booking.payment_code || "Chưa có",
+                        ),
+                        React.createElement(
+                          "span",
+                          null,
+                          React.createElement("b", null, "Hạn giữ"),
+                          formatOptionalDateTime(booking.payment_expires_at),
                         ),
                       ),
                       renderBookingActions(booking),
