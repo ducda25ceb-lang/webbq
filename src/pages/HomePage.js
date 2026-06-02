@@ -8,6 +8,41 @@ const fallbackDishImage =
   "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1200&auto=format&fit=crop";
 
 const formatPrice = (price) => `${price} VND`;
+const heroEmberCount = 38;
+
+function HeroEmberField() {
+  return React.createElement(
+    "div",
+    { className: "hero-ember-field", "aria-hidden": "true" },
+    Array.from({ length: heroEmberCount }, (_, index) => {
+      const x = (index * 37 + 11) % 100;
+      const drift = ((index * 29) % 62) - 31;
+      const duration = 5.8 + (index % 8) * 0.52;
+      const delay = -((index * 0.63) % duration);
+      const scale = 0.62 + (index % 5) * 0.16;
+      const depth = index % 3;
+      const flickerDelay = (index * 0.17) % 0.9;
+
+      return React.createElement("span", {
+        key: index,
+        className: `hero-ember hero-ember--${depth}`,
+        style: {
+          "--ember-x": `${x}%`,
+          "--ember-drift": `${drift}px`,
+          "--ember-mid-drift": `${(drift * -0.42).toFixed(1)}px`,
+          "--ember-end-drift": `${(drift * 0.78).toFixed(1)}px`,
+          "--ember-duration": `${duration.toFixed(2)}s`,
+          "--ember-delay": `${delay.toFixed(2)}s`,
+          "--ember-flicker-delay": `${flickerDelay.toFixed(2)}s`,
+          "--ember-scale": scale.toFixed(2),
+          "--ember-start-scale": (scale * 0.55).toFixed(2),
+          "--ember-mid-scale": (scale * 0.84).toFixed(2),
+          "--ember-end-scale": (scale * 0.28).toFixed(2),
+        },
+      });
+    }),
+  );
+}
 
 function parseStatValue(value) {
   const match = String(value).match(/^([\d\s]+)(.*)$/);
@@ -121,6 +156,7 @@ export function HomePage() {
     React.createElement(
       "section",
       { className: "hero reveal" },
+      React.createElement(HeroEmberField),
       React.createElement("div", { className: "hero-overlay" }),
       React.createElement(
         "div",
