@@ -32,9 +32,7 @@ const DRINK_CATEGORY = "do-uong";
 
 const formatPrice = (price) => `${price} VND`;
 
-const menuCategories = categories.some((cat) => cat.key === DRINK_CATEGORY)
-  ? categories
-  : [...categories, { key: DRINK_CATEGORY, label: "Đồ uống" }];
+const menuCategories = categories.filter((cat) => cat.key !== DRINK_CATEGORY);
 
 const mapStaticMenuItem = (dish, index, categoryOverride = dish.category) => ({
   ...dish,
@@ -207,10 +205,11 @@ export function MenuPage() {
   }, []);
 
   const items = useMemo(() => {
+    const mainMenuItems = menuItems.filter((dish) => dish.category !== DRINK_CATEGORY);
     let result =
       active === "all"
-        ? menuItems
-        : menuItems.filter((d) => d.category === active);
+        ? mainMenuItems
+        : mainMenuItems.filter((d) => d.category === active);
 
     if (searchText.trim()) {
       const keyword = normalizeText(searchText.trim());
