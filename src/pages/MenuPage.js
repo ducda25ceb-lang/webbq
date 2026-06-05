@@ -7,6 +7,10 @@ import {
 } from "../data/mockData.js";
 import { useScrollReveal } from "../components/ScrollReveal.js";
 import { isSupabaseConfigured, supabase } from "../lib/supabase.js";
+import {
+  loadLocalMenuItems,
+  loadPublicMenuItems,
+} from "../services/menuService.js";
 
 const quickTags = [
   { key: "all", label: "Tất cả" },
@@ -24,8 +28,29 @@ const INITIAL_VISIBLE_ITEMS = 8;
 const COMMENT_PAGE_SIZE = 4;
 const MAX_RATING = 5;
 const DEFAULT_RATING = 5;
+const DRINK_CATEGORY = "do-uong";
 
 const formatPrice = (price) => `${price} VND`;
+
+const menuCategories = categories.some((cat) => cat.key === DRINK_CATEGORY)
+  ? categories
+  : [...categories, { key: DRINK_CATEGORY, label: "Đồ uống" }];
+
+const mapStaticMenuItem = (dish, index, categoryOverride = dish.category) => ({
+  ...dish,
+  category: categoryOverride,
+  sortOrder: index + 1,
+  isAvailable: true,
+  isActive: true,
+  isPopular: popularDishIds.includes(dish.id),
+});
+
+const fallbackMenuItems = [
+  ...featuredDishes.map((dish, index) => mapStaticMenuItem(dish, index)),
+  ...drinkSpecials.map((dish, index) =>
+    mapStaticMenuItem(dish, featuredDishes.length + index, DRINK_CATEGORY),
+  ),
+];
 
 const normalizeText = (value) =>
   value
@@ -60,6 +85,9 @@ export function MenuPage() {
   const [searchText, setSearchText] = useState("");
   const [quickTag, setQuickTag] = useState("all");
   const [showAllItems, setShowAllItems] = useState(false);
+  const [menuItems, setMenuItems] = useState(fallbackMenuItems);
+  const [menuLoadError, setMenuLoadError] = useState("");
+  const [usingMenuFallback, setUsingMenuFallback] = useState(!isSupabaseConfigured);
   const [comments, setComments] = useState([
     {
       id: 1,
@@ -85,12 +113,45 @@ export function MenuPage() {
 
   const categoryLabel = useMemo(
     () =>
-      categories.reduce((acc, cat) => {
+      menuCategories.reduce((acc, cat) => {
         acc[cat.key] = cat.label;
         return acc;
       }, {}),
     [],
   );
+
+  React.useEffect(() => {
+    let activeRequest = true;
+
+    async function loadMenu() {
+      const result = await loadPublicMenuItems();
+
+      if (!activeRequest) {
+        return;
+      }
+
+      if (result.items.length) {
+        setMenuItems(result.items);
+        setUsingMenuFallback(false);
+        setMenuLoadError("");
+        return;
+      }
+
+      setMenuItems(loadLocalMenuItems(fallbackMenuItems));
+      setUsingMenuFallback(true);
+      setMenuLoadError(
+        result.error
+          ? "Thực đơn đang dùng dữ liệu local vì chưa tải được database món."
+          : "",
+      );
+    }
+
+    loadMenu();
+
+    return () => {
+      activeRequest = false;
+    };
+  }, []);
 
   React.useEffect(() => {
     let activeRequest = true;
@@ -148,8 +209,8 @@ export function MenuPage() {
   const items = useMemo(() => {
     let result =
       active === "all"
-        ? featuredDishes
-        : featuredDishes.filter((d) => d.category === active);
+        ? menuItems
+        : menuItems.filter((d) => d.category === active);
 
     if (searchText.trim()) {
       const keyword = normalizeText(searchText.trim());
@@ -161,7 +222,7 @@ export function MenuPage() {
     }
 
     if (quickTag === "popular") {
-      result = result.filter((d) => popularDishIds.includes(d.id));
+      result = result.filter((d) => d.isPopular);
     }
 
     if (quickTag === "premium") {
@@ -175,7 +236,7 @@ export function MenuPage() {
     }
 
     return result;
-  }, [active, categoryLabel, quickTag, searchText]);
+  }, [active, categoryLabel, menuItems, quickTag, searchText]);
 
   React.useEffect(() => {
     setShowAllItems(false);
@@ -212,11 +273,17 @@ export function MenuPage() {
 
   const hotItems = useMemo(
     () =>
-      featuredDishes.filter((d) => popularDishIds.includes(d.id)).slice(0, 4),
-    [],
+      menuItems
+        .filter((d) => d.isPopular && d.category !== DRINK_CATEGORY && d.isAvailable)
+        .slice(0, 4),
+    [menuItems],
   );
 
-  const carouselItems = useMemo(() => [...drinkSpecials, ...drinkSpecials], []);
+  const drinkItems = useMemo(
+    () => menuItems.filter((dish) => dish.category === DRINK_CATEGORY),
+    [menuItems],
+  );
+  const carouselItems = useMemo(() => [...drinkItems, ...drinkItems], [drinkItems]);
   const totalCommentPages = Math.max(
     1,
     Math.ceil(comments.length / COMMENT_PAGE_SIZE),
@@ -308,7 +375,7 @@ export function MenuPage() {
     React.createElement(
       "div",
       { className: "filter-row reveal" },
-      categories.map((cat) =>
+      menuCategories.map((cat) =>
         React.createElement(
           "button",
           {
@@ -361,6 +428,13 @@ export function MenuPage() {
     React.createElement(
       "section",
       { className: "menu-results reveal", "aria-live": "polite" },
+      usingMenuFallback && menuLoadError
+        ? React.createElement(
+            "p",
+            { className: "setup-warning" },
+            menuLoadError,
+          )
+        : null,
       React.createElement(
         "div",
         { className: "menu-results-heading" },
@@ -395,13 +469,29 @@ export function MenuPage() {
           ? visibleItems.map((dish) =>
               React.createElement(
                 "article",
-                { className: "dish-card", key: dish.id },
-                React.createElement("img", {
-                  src: dish.image,
-                  alt: dish.name,
-                  loading: "lazy",
-                  onError: handleImageError,
-                }),
+                {
+                  className: dish.isAvailable
+                    ? "dish-card"
+                    : "dish-card is-sold-out",
+                  key: dish.id,
+                },
+                React.createElement(
+                  "div",
+                  { className: "dish-image-wrap" },
+                  React.createElement("img", {
+                    src: dish.image,
+                    alt: dish.name,
+                    loading: "lazy",
+                    onError: handleImageError,
+                  }),
+                  dish.isAvailable
+                    ? null
+                    : React.createElement(
+                        "span",
+                        { className: "sold-out-badge" },
+                        "Hết món",
+                      ),
+                ),
                 React.createElement(
                   "div",
                   { className: "dish-body" },
@@ -414,7 +504,9 @@ export function MenuPage() {
                   React.createElement(
                     "p",
                     { className: "menu-price" },
-                    formatPrice(dish.price),
+                    dish.isAvailable
+                      ? formatPrice(dish.price)
+                      : `${formatPrice(dish.price)} - Hết món`,
                   ),
                 ),
               ),
@@ -489,7 +581,8 @@ export function MenuPage() {
       React.createElement(
         "div",
         { className: "drink-carousel-viewport" },
-        React.createElement(
+        carouselItems.length
+          ? React.createElement(
           "div",
           { className: "drink-carousel-track" },
           carouselItems.map((drink, index) =>
@@ -499,7 +592,7 @@ export function MenuPage() {
                 key: `${drink.id}-${index}`,
                 className: "drink-card",
                 "aria-hidden":
-                  index >= drinkSpecials.length ? "true" : undefined,
+                  index >= drinkItems.length ? "true" : undefined,
               },
               React.createElement("img", {
                 src: drink.image,
@@ -524,7 +617,12 @@ export function MenuPage() {
               ),
             ),
           ),
-        ),
+        )
+          : React.createElement(
+              "p",
+              { className: "empty-note" },
+              "Chưa có món nước trong thực đơn.",
+            ),
       ),
     ),
     React.createElement(

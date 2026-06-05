@@ -16,6 +16,7 @@ export function Navbar() {
     { to: "/admin?tab=overview", tab: "overview", label: "Tổng quan" },
     { to: "/admin?tab=bookings", tab: "bookings", label: "Đặt bàn" },
     { to: "/admin?tab=contacts", tab: "contacts", label: "Liên hệ" },
+    { to: "/admin?tab=menu", tab: "menu", label: "Thực đơn" },
   ];
 
   const navItemClass = ({ isActive }) =>

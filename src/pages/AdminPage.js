@@ -17,6 +17,20 @@ import {
   supabase,
 } from "../lib/supabase.js";
 import { useAuth } from "../context/AuthContext.js";
+import {
+  loadAdminMenuItems,
+  loadLocalMenuItems,
+  readImageFileAsDataUrl,
+  saveLocalMenuItem,
+  saveMenuItem,
+  toggleMenuItemAvailability,
+  uploadMenuItemImage,
+} from "../services/menuService.js";
+import {
+  drinkSpecials,
+  featuredDishes,
+  popularDishIds,
+} from "../data/mockData.js";
 
 const BOOKING_SELECT =
   "id, booking_code, customer_name, customer_email, phone, booking_date, booking_time, guests, status, deposit_amount, payment_code, payment_status, payment_expires_at, payment_confirmed_at, admin_note, created_at";
@@ -37,6 +51,64 @@ const ADMIN_WORKSPACE_TABS = [
   "overview",
   "bookings",
   "contacts",
+  "menu",
+];
+const MENU_CATEGORY_OPTIONS = [
+  { value: "bo", label: "Bò" },
+  { value: "heo", label: "Heo" },
+  { value: "ga", label: "Gà" },
+  { value: "hai-san", label: "Hải sản" },
+  { value: "rau", label: "Rau" },
+  { value: "combo", label: "Combo" },
+  { value: "do-uong", label: "Đồ uống" },
+];
+const MENU_STATUS_FILTERS = [
+  { value: "all", label: "Tất cả" },
+  { value: "available", label: "Còn món" },
+  { value: "sold-out", label: "Hết món" },
+];
+
+function createEmptyMenuForm(nextSortOrder = 1) {
+  return {
+    id: "",
+    name: "",
+    category: "bo",
+    price: "",
+    description: "",
+    imageUrl: "",
+    isAvailable: true,
+    isPopular: false,
+    sortOrder: nextSortOrder,
+  };
+}
+
+const fallbackAdminMenuItems = [
+  ...featuredDishes.map((dish, index) => ({
+    id: `fallback-dish-${dish.id}`,
+    name: dish.name,
+    category: dish.category,
+    price: dish.price,
+    description: dish.description,
+    imageUrl: dish.image,
+    image: dish.image,
+    isAvailable: true,
+    isActive: true,
+    isPopular: popularDishIds.includes(dish.id),
+    sortOrder: index + 1,
+  })),
+  ...drinkSpecials.map((dish, index) => ({
+    id: `fallback-drink-${dish.id}`,
+    name: dish.name,
+    category: "do-uong",
+    price: dish.price,
+    description: dish.description,
+    imageUrl: dish.image,
+    image: dish.image,
+    isAvailable: true,
+    isActive: true,
+    isPopular: false,
+    sortOrder: featuredDishes.length + index + 1,
+  })),
 ];
 
 function getLocalDateValue(date = new Date()) {
@@ -255,6 +327,18 @@ export function AdminPage() {
   const [bookingReviewTab, setBookingReviewTab] = React.useState("pending");
   const [bookingDateFilter, setBookingDateFilter] = React.useState("all");
   const [bookingSearch, setBookingSearch] = React.useState("");
+  const [menuItems, setMenuItems] = React.useState([]);
+  const [menuLoading, setMenuLoading] = React.useState(isSupabaseConfigured);
+  const [menuError, setMenuError] = React.useState("");
+  const [menuActionMsg, setMenuActionMsg] = React.useState("");
+  const [menuSearch, setMenuSearch] = React.useState("");
+  const [menuCategoryFilter, setMenuCategoryFilter] = React.useState("all");
+  const [menuStatusFilter, setMenuStatusFilter] = React.useState("all");
+  const [menuForm, setMenuForm] = React.useState(createEmptyMenuForm());
+  const [menuDrafts, setMenuDrafts] = React.useState({});
+  const [menuBusyId, setMenuBusyId] = React.useState("");
+  const [menuSaving, setMenuSaving] = React.useState(false);
+  const [imageUploading, setImageUploading] = React.useState(false);
   const adminEmailsText = ADMIN_EMAILS.join(", ");
   const activeAdminSection = React.useMemo(() => {
     const tab = new URLSearchParams(location.search).get("tab");
@@ -330,6 +414,72 @@ export function AdminPage() {
       },
     ];
   }, [bookings, filteredReviewBookings.length, reviewBookings.length]);
+
+  const nextMenuSortOrder = React.useMemo(
+    () =>
+      menuItems.length
+        ? Math.max(...menuItems.map((item) => Number(item.sortOrder || 0))) + 1
+        : 1,
+    [menuItems],
+  );
+
+  const menuCategoryLabel = React.useMemo(
+    () =>
+      MENU_CATEGORY_OPTIONS.reduce((acc, item) => {
+        acc[item.value] = item.label;
+        return acc;
+      }, {}),
+    [],
+  );
+
+  const filteredMenuItems = React.useMemo(() => {
+    const keyword = menuSearch.trim().toLowerCase();
+
+    return menuItems.filter((item) => {
+      const matchesCategory =
+        menuCategoryFilter === "all" || item.category === menuCategoryFilter;
+      const matchesStatus =
+        menuStatusFilter === "all" ||
+        (menuStatusFilter === "available" && item.isAvailable) ||
+        (menuStatusFilter === "sold-out" && !item.isAvailable);
+      const matchesSearch =
+        !keyword ||
+        [item.name, item.description, menuCategoryLabel[item.category]]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(keyword));
+
+      return matchesCategory && matchesStatus && matchesSearch;
+    });
+  }, [
+    menuCategoryFilter,
+    menuCategoryLabel,
+    menuItems,
+    menuSearch,
+    menuStatusFilter,
+  ]);
+
+  const menuSummary = React.useMemo(() => {
+    const soldOutCount = menuItems.filter((item) => !item.isAvailable).length;
+    const popularCount = menuItems.filter((item) => item.isPopular).length;
+
+    return [
+      {
+        label: "Tổng món",
+        value: String(menuItems.length),
+        detail: "Đang hiển thị trong menu",
+      },
+      {
+        label: "Hết món",
+        value: String(soldOutCount),
+        detail: "Vẫn hiện mờ ở trang khách",
+      },
+      {
+        label: "Bán chạy",
+        value: String(popularCount),
+        detail: "Dùng cho bộ lọc nổi bật",
+      },
+    ];
+  }, [menuItems]);
 
   const stats = React.useMemo(() => {
     const today = getLocalDateValue();
@@ -529,19 +679,288 @@ export function AdminPage() {
     setContactsLoading(false);
   }, [contacts.length]);
 
+  const loadMenuItems = React.useCallback(async () => {
+    if (!isSupabaseConfigured) {
+      setMenuItems(loadLocalMenuItems(fallbackAdminMenuItems));
+      setMenuLoading(false);
+      setMenuError("");
+      return;
+    }
+
+    setMenuLoading(true);
+    setMenuError("");
+
+    try {
+      const items = await loadAdminMenuItems();
+      setMenuItems(items);
+      setMenuDrafts({});
+      setMenuForm((current) =>
+        current.id ? current : createEmptyMenuForm(
+          items.length
+            ? Math.max(...items.map((item) => Number(item.sortOrder || 0))) + 1
+            : 1,
+        ),
+      );
+    } catch (loadError) {
+      setMenuItems(loadLocalMenuItems(fallbackAdminMenuItems));
+      setMenuDrafts({});
+      setMenuError(
+        "Database chưa có bảng menu_items nên đang dùng dữ liệu local trên máy này. Admin vẫn thao tác được; chạy migration 0010 để lưu lên Supabase thật.",
+      );
+    } finally {
+      setMenuLoading(false);
+    }
+  }, []);
+
   React.useEffect(() => {
     loadBookings();
     loadContacts();
-  }, [loadBookings, loadContacts]);
+    loadMenuItems();
+  }, [loadBookings, loadContacts, loadMenuItems]);
 
   const refreshAdminData = () => {
     loadBookings();
     setActiveReplyContactId("");
     loadContacts({ reset: true });
+    loadMenuItems();
   };
 
   const loadMoreContacts = () => {
     loadContacts({ reset: false });
+  };
+
+  const startNewMenuItem = () => {
+    setMenuForm(createEmptyMenuForm(nextMenuSortOrder));
+    setMenuError("");
+    setMenuActionMsg("");
+  };
+
+  const editMenuItem = (item) => {
+    setMenuForm({
+      id: item.id,
+      name: item.name,
+      category: item.category,
+      price: String(item.price),
+      description: item.description,
+      imageUrl: item.imageUrl,
+      isAvailable: item.isAvailable,
+      isPopular: item.isPopular,
+      sortOrder: item.sortOrder || nextMenuSortOrder,
+    });
+    setMenuError("");
+    setMenuActionMsg("");
+  };
+
+  const updateMenuForm = (field, value) => {
+    setMenuForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  };
+
+  const handleMenuImageUpload = async (event) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    setImageUploading(true);
+    setMenuError("");
+    setMenuActionMsg("");
+
+    try {
+      const publicUrl = await uploadMenuItemImage(file);
+      updateMenuForm("imageUrl", publicUrl);
+      setMenuActionMsg("Ảnh món đã được tải lên Storage.");
+    } catch (uploadError) {
+      setMenuError(uploadError.message || "Không thể upload ảnh món.");
+    } finally {
+      setImageUploading(false);
+      event.target.value = "";
+    }
+  };
+
+  const submitMenuForm = async (event) => {
+    event.preventDefault();
+
+    if (menuSaving) {
+      return;
+    }
+
+    setMenuSaving(true);
+    setMenuError("");
+    setMenuActionMsg("");
+
+    try {
+      const savedItem = await saveMenuItem(menuForm);
+      setMenuItems((current) => {
+        const exists = current.some((item) => item.id === savedItem.id);
+        const next = exists
+          ? current.map((item) => (item.id === savedItem.id ? savedItem : item))
+          : [...current, savedItem];
+
+        return next
+          .slice()
+          .sort(
+            (a, b) =>
+              Number(a.sortOrder || 0) - Number(b.sortOrder || 0) ||
+              Number(a.id || 0) - Number(b.id || 0),
+          );
+      });
+      setMenuForm({
+        id: savedItem.id,
+        name: savedItem.name,
+        category: savedItem.category,
+        price: String(savedItem.price),
+        description: savedItem.description,
+        imageUrl: savedItem.imageUrl,
+        isAvailable: savedItem.isAvailable,
+        isPopular: savedItem.isPopular,
+        sortOrder: savedItem.sortOrder,
+      });
+      setMenuActionMsg(`Đã lưu món ${savedItem.name}.`);
+    } catch (saveError) {
+      setMenuError(saveError.message || "Không thể lưu món.");
+    } finally {
+      setMenuSaving(false);
+    }
+  };
+
+  const toggleMenuAvailability = async (item) => {
+    if (menuBusyId) {
+      return;
+    }
+
+    setMenuBusyId(item.id);
+    setMenuError("");
+    setMenuActionMsg("");
+
+    try {
+      const updatedItem = await toggleMenuItemAvailability(item);
+      setMenuItems((current) =>
+        current.map((menuItem) =>
+          menuItem.id === updatedItem.id ? updatedItem : menuItem,
+        ),
+      );
+      if (menuForm.id === updatedItem.id) {
+        setMenuForm((current) => ({
+          ...current,
+          isAvailable: updatedItem.isAvailable,
+        }));
+      }
+      setMenuActionMsg(
+        updatedItem.isAvailable
+          ? `Đã mở bán lại món ${updatedItem.name}.`
+          : `Đã báo hết món ${updatedItem.name}.`,
+      );
+    } catch (toggleError) {
+      setMenuError(toggleError.message || "Không thể đổi trạng thái món.");
+    } finally {
+      setMenuBusyId("");
+    }
+  };
+
+  const getMenuDraft = (item) => ({
+    description: menuDrafts[item.id]?.description ?? item.description ?? "",
+    imageUrl: menuDrafts[item.id]?.imageUrl ?? item.imageUrl ?? "",
+    price: menuDrafts[item.id]?.price ?? String(item.price ?? 0),
+  });
+
+  const updateMenuDraft = (item, field, value) => {
+    setMenuDrafts((current) => ({
+      ...current,
+      [item.id]: {
+        ...getMenuDraft(item),
+        ...current[item.id],
+        [field]: value,
+      },
+    }));
+  };
+
+  const updateMenuItemInList = (updatedItem) => {
+    setMenuItems((current) =>
+      current.map((item) => (item.id === updatedItem.id ? updatedItem : item)),
+    );
+  };
+
+  const saveInlineMenuItem = async (item, overrides = {}) => {
+    const draft = getMenuDraft(item);
+    const nextValues = {
+      ...item,
+      price: Number(draft.price || 0),
+      description: draft.description,
+      imageUrl: draft.imageUrl,
+      ...overrides,
+    };
+
+    setMenuBusyId(item.id);
+    setMenuError("");
+    setMenuActionMsg("");
+
+    try {
+      if (item.isLocal) {
+        const savedItem = saveLocalMenuItem(nextValues, menuItems);
+        updateMenuItemInList(savedItem);
+        setMenuDrafts((current) => {
+          const next = { ...current };
+          delete next[item.id];
+          return next;
+        });
+        setMenuActionMsg(`Đã lưu local món ${savedItem.name}.`);
+        return savedItem;
+      }
+
+      const savedItem = await saveMenuItem(nextValues);
+      updateMenuItemInList(savedItem);
+      setMenuDrafts((current) => {
+        const next = { ...current };
+        delete next[item.id];
+        return next;
+      });
+      setMenuActionMsg(`Đã cập nhật món ${savedItem.name}.`);
+      return savedItem;
+    } catch (saveError) {
+      setMenuError(saveError.message || "Không thể cập nhật món.");
+      return null;
+    } finally {
+      setMenuBusyId("");
+    }
+  };
+
+  const setInlineMenuAvailability = async (item, isAvailable) => {
+    if (item.isAvailable === isAvailable || menuBusyId) {
+      return;
+    }
+
+    await saveInlineMenuItem(item, { isAvailable });
+  };
+
+  const handleInlineMenuImageUpload = async (item, event) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    setImageUploading(true);
+    setMenuBusyId(item.id);
+    setMenuError("");
+    setMenuActionMsg("");
+
+    try {
+      const publicUrl = item.isLocal
+        ? await readImageFileAsDataUrl(file)
+        : await uploadMenuItemImage(file);
+      updateMenuDraft(item, "imageUrl", publicUrl);
+      await saveInlineMenuItem(item, { imageUrl: publicUrl });
+    } catch (uploadError) {
+      setMenuError(uploadError.message || "Không thể thay ảnh món.");
+    } finally {
+      setImageUploading(false);
+      setMenuBusyId("");
+      event.target.value = "";
+    }
   };
 
   const updateBookingStatus = async (booking, status) => {
@@ -726,6 +1145,457 @@ export function AdminPage() {
       "span",
       { className: `admin-payment-pill ${getPaymentClass(booking)}` },
       getPaymentLabel(booking),
+    );
+
+  const getMenuItemCardClass = (item) =>
+    [
+      "admin-menu-item-card",
+      item.isAvailable ? "" : "is-sold-out",
+      menuForm.id === item.id ? "is-selected" : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+  const renderMenuManager = () =>
+    React.createElement(
+      "section",
+      { className: "panel admin-menu-panel" },
+      React.createElement(
+        "div",
+        { className: "admin-section-heading" },
+        React.createElement("h2", null, "Quản trị thực đơn"),
+        React.createElement(
+          "p",
+          { className: "muted" },
+          "Bấm trực tiếp trên từng món để báo hết, mở bán lại, thay ảnh hoặc chỉnh ghi chú.",
+        ),
+      ),
+      menuError ? React.createElement("p", { className: "error-msg" }, menuError) : null,
+      menuActionMsg
+        ? React.createElement("p", { className: "success-msg" }, menuActionMsg)
+        : null,
+      !isSupabaseConfigured
+        ? React.createElement(
+            "p",
+            { className: "setup-warning" },
+            "Tab thực đơn cần Supabase và migration menu_items để lưu món thật.",
+          )
+        : null,
+      React.createElement(
+        "div",
+        { className: "admin-work-summary admin-menu-summary" },
+        menuSummary.map((item) =>
+          React.createElement(
+            "article",
+            { key: item.label, className: "admin-work-summary-item" },
+            React.createElement("span", null, item.label),
+            React.createElement("strong", null, menuLoading ? "-" : item.value),
+            React.createElement("small", null, menuLoading ? "Đang cập nhật" : item.detail),
+          ),
+        ),
+      ),
+      React.createElement(
+        "div",
+        { className: "admin-menu-layout" },
+        React.createElement(
+          "form",
+          { className: "admin-menu-form", onSubmit: submitMenuForm },
+          React.createElement(
+            "div",
+            { className: "admin-menu-form-head" },
+            React.createElement(
+              "div",
+              null,
+              React.createElement("h3", null, menuForm.id ? "Đang sửa món" : "Tạo món mới"),
+              React.createElement(
+                "p",
+                { className: "muted admin-menu-current-item" },
+                menuForm.id
+                  ? menuForm.name || "Món đang chọn chưa có tên."
+                  : "Nhập thông tin món rồi lưu để đưa vào thực đơn.",
+              ),
+            ),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                className: "btn-outline admin-menu-new-btn",
+                onClick: startNewMenuItem,
+              },
+              "Món mới",
+            ),
+          ),
+          React.createElement(
+            "div",
+            { className: "admin-menu-form-section-title" },
+            React.createElement("span", null, "Ảnh món"),
+            React.createElement(
+              "small",
+              null,
+              imageUploading ? "Đang upload ảnh..." : "Upload từ máy hoặc dán URL ảnh",
+            ),
+          ),
+          React.createElement(
+            "div",
+            { className: "admin-menu-preview" },
+            menuForm.imageUrl
+              ? React.createElement("img", {
+                  src: menuForm.imageUrl,
+                  alt: menuForm.name || "Ảnh món đang chỉnh",
+                })
+              : React.createElement(
+                  "span",
+                  { className: "muted" },
+                  "Chưa có ảnh",
+                ),
+          ),
+          React.createElement(
+            "label",
+            { className: "admin-menu-field admin-menu-image-url-field" },
+            React.createElement("span", null, "URL ảnh"),
+            React.createElement("input", {
+              value: menuForm.imageUrl,
+              placeholder: "https://...",
+              onChange: (event) => updateMenuForm("imageUrl", event.target.value),
+            }),
+          ),
+          React.createElement(
+            "label",
+            { className: "admin-menu-upload" },
+            React.createElement("span", null, imageUploading ? "Đang upload..." : "Chọn ảnh từ máy"),
+            React.createElement("input", {
+              type: "file",
+              accept: "image/*",
+              disabled: imageUploading || !isSupabaseConfigured,
+              onChange: handleMenuImageUpload,
+            }),
+          ),
+          React.createElement(
+            "div",
+            { className: "admin-menu-form-section-title" },
+            React.createElement("span", null, "Thông tin món"),
+            React.createElement("small", null, "Tên, loại, giá và mô tả hiển thị ngoài menu"),
+          ),
+          React.createElement(
+            "label",
+            { className: "admin-menu-field" },
+            React.createElement("span", null, "Tên món"),
+            React.createElement("input", {
+              value: menuForm.name,
+              placeholder: "Ví dụ: Sườn bò Wagyu nướng than",
+              onChange: (event) => updateMenuForm("name", event.target.value),
+            }),
+          ),
+          React.createElement(
+            "div",
+            { className: "admin-menu-form-grid" },
+            React.createElement(
+              "label",
+              { className: "admin-menu-field" },
+              React.createElement("span", null, "Loại món"),
+              React.createElement(
+              "select",
+              {
+                value: menuForm.category,
+                onChange: (event) => updateMenuForm("category", event.target.value),
+              },
+              MENU_CATEGORY_OPTIONS.map((option) =>
+                React.createElement(
+                  "option",
+                  { key: option.value, value: option.value },
+                  option.label,
+                ),
+              ),
+            ),
+            ),
+            React.createElement(
+              "label",
+              { className: "admin-menu-field" },
+              React.createElement("span", null, "Giá bán"),
+              React.createElement("input", {
+                type: "number",
+                min: "0",
+                step: "1000",
+                value: menuForm.price,
+                placeholder: "520000",
+                onChange: (event) => updateMenuForm("price", event.target.value),
+              }),
+            ),
+          ),
+          React.createElement(
+            "label",
+            { className: "admin-menu-field" },
+            React.createElement("span", null, "Mô tả"),
+            React.createElement("textarea", {
+              rows: 4,
+              value: menuForm.description,
+              placeholder: "Mô tả ngắn gọn, dễ đọc trên card món.",
+              onChange: (event) => updateMenuForm("description", event.target.value),
+            }),
+          ),
+          React.createElement(
+            "div",
+            { className: "admin-menu-form-section-title" },
+            React.createElement("span", null, "Trạng thái vận hành"),
+            React.createElement("small", null, "Báo hết món sẽ làm món mờ ngoài trang khách"),
+          ),
+          React.createElement(
+            "div",
+            { className: "admin-menu-toggle-row" },
+            React.createElement(
+              "label",
+              { className: "admin-toggle-control" },
+              React.createElement("input", {
+                type: "checkbox",
+                checked: menuForm.isAvailable,
+                onChange: (event) =>
+                  updateMenuForm("isAvailable", event.target.checked),
+              }),
+              React.createElement("span", null, "Còn món"),
+            ),
+            React.createElement(
+              "label",
+              { className: "admin-toggle-control" },
+              React.createElement("input", {
+                type: "checkbox",
+                checked: menuForm.isPopular,
+                onChange: (event) =>
+                  updateMenuForm("isPopular", event.target.checked),
+              }),
+              React.createElement("span", null, "Bán chạy"),
+            ),
+            React.createElement("input", {
+              className: "admin-sort-input",
+              type: "number",
+              min: "0",
+              value: menuForm.sortOrder,
+              "aria-label": "Thứ tự hiển thị",
+              title: "Thứ tự hiển thị",
+              onChange: (event) => updateMenuForm("sortOrder", event.target.value),
+            }),
+          ),
+          React.createElement(
+            "button",
+            {
+              type: "submit",
+              className: "btn-gold admin-menu-save-btn",
+              disabled: menuSaving || !isSupabaseConfigured,
+            },
+            menuSaving ? "Đang lưu..." : "Lưu món",
+          ),
+        ),
+        React.createElement(
+          "div",
+          { className: "admin-menu-list-panel" },
+          React.createElement(
+            "div",
+            { className: "admin-menu-list-head" },
+            React.createElement(
+              "div",
+              null,
+              React.createElement("h3", null, "Danh sách món"),
+              React.createElement(
+                "p",
+                { className: "muted" },
+                "Mỗi món có nút Còn món/Hết món, thay ảnh và ô ghi chú riêng.",
+              ),
+            ),
+          ),
+          React.createElement(
+            "div",
+            { className: "admin-booking-toolbar admin-menu-toolbar" },
+            React.createElement("input", {
+              className: "admin-search-input",
+              type: "search",
+              placeholder: "Tìm tên món, mô tả, loại...",
+              value: menuSearch,
+              onChange: (event) => setMenuSearch(event.target.value),
+            }),
+            React.createElement(
+              "select",
+              {
+                className: "admin-filter-select",
+                value: menuCategoryFilter,
+                onChange: (event) => setMenuCategoryFilter(event.target.value),
+              },
+              React.createElement("option", { value: "all" }, "Tất cả loại"),
+              MENU_CATEGORY_OPTIONS.map((option) =>
+                React.createElement(
+                  "option",
+                  { key: option.value, value: option.value },
+                  option.label,
+                ),
+              ),
+            ),
+            React.createElement(
+              "div",
+              { className: "admin-date-filter-row" },
+              MENU_STATUS_FILTERS.map((filter) =>
+                React.createElement(
+                  "button",
+                  {
+                    key: filter.value,
+                    type: "button",
+                    className:
+                      menuStatusFilter === filter.value
+                        ? "admin-date-filter active"
+                        : "admin-date-filter",
+                    onClick: () => setMenuStatusFilter(filter.value),
+                  },
+                  filter.label,
+                ),
+              ),
+            ),
+            React.createElement(
+              "span",
+              { className: "admin-result-count" },
+              `${filteredMenuItems.length}/${menuItems.length} món`,
+            ),
+          ),
+          menuLoading
+            ? React.createElement("p", null, "Đang tải thực đơn...")
+            : React.createElement(
+                "div",
+                { className: "admin-menu-list" },
+                filteredMenuItems.length
+                  ? filteredMenuItems.map((item) => {
+                      const draft = getMenuDraft(item);
+                      const isBusy = menuBusyId === item.id;
+
+                      return React.createElement(
+                        "article",
+                        {
+                          key: item.id,
+                          className: getMenuItemCardClass(item),
+                        },
+                        React.createElement(
+                          "div",
+                          { className: "admin-menu-image-control" },
+                          React.createElement("img", {
+                            src:
+                              draft.imageUrl ||
+                              item.imageUrl ||
+                              "assets/images/food-fallback.svg",
+                            alt: item.name,
+                          }),
+                          React.createElement(
+                            "label",
+                            { className: "admin-menu-image-btn" },
+                            imageUploading && isBusy ? "Đang thay..." : "Thay ảnh",
+                            React.createElement("input", {
+                              type: "file",
+                              accept: "image/*",
+                              disabled: imageUploading,
+                              onChange: (event) =>
+                                handleInlineMenuImageUpload(item, event),
+                            }),
+                          ),
+                        ),
+                        React.createElement(
+                          "div",
+                          { className: "admin-menu-item-body" },
+                          React.createElement(
+                            "div",
+                            { className: "admin-menu-item-title" },
+                            React.createElement("h3", null, item.name),
+                            React.createElement(
+                              "span",
+                              {
+                                className: item.isAvailable
+                                  ? "admin-status-pill is-confirmed"
+                                  : "admin-status-pill is-cancelled",
+                              },
+                              item.isAvailable ? "Còn món" : "Hết món",
+                            ),
+                          ),
+                          React.createElement(
+                            "p",
+                            { className: "muted admin-menu-item-meta" },
+                            `${menuCategoryLabel[item.category] || item.category} | ${formatMoney(item.price)}${item.isPopular ? " | Bán chạy" : ""}`,
+                          ),
+                          React.createElement(
+                            "label",
+                            { className: "admin-menu-price-field" },
+                            React.createElement("span", null, "Giá bán"),
+                            React.createElement("input", {
+                              type: "number",
+                              min: "0",
+                              step: "1000",
+                              value: draft.price,
+                              placeholder: "Nhập giá món",
+                              disabled: false,
+                              onChange: (event) =>
+                                updateMenuDraft(item, "price", event.target.value),
+                            }),
+                          ),
+                          React.createElement(
+                            "div",
+                            { className: "admin-menu-status-actions" },
+                            React.createElement(
+                              "button",
+                              {
+                                type: "button",
+                                className: item.isAvailable
+                                  ? "btn-gold admin-menu-status-btn"
+                                  : "btn-outline admin-menu-status-btn",
+                                disabled: isBusy || item.isAvailable,
+                                onClick: () => setInlineMenuAvailability(item, true),
+                              },
+                              "Còn món",
+                            ),
+                            React.createElement(
+                              "button",
+                              {
+                                type: "button",
+                                className: !item.isAvailable
+                                  ? "btn-gold admin-menu-status-btn"
+                                  : "btn-outline admin-menu-status-btn dashboard-cancel-btn",
+                                disabled: isBusy || !item.isAvailable,
+                                onClick: () => setInlineMenuAvailability(item, false),
+                              },
+                              "Hết món",
+                            ),
+                          ),
+                          React.createElement(
+                            "label",
+                            { className: "admin-menu-note-field" },
+                            React.createElement("span", null, "Ghi chú / mô tả món"),
+                            React.createElement("textarea", {
+                              rows: 3,
+                              value: draft.description,
+                              disabled: false,
+                              placeholder: "Ghi chú món, mô tả vị, hoặc thông tin cần khách biết.",
+                              onChange: (event) =>
+                                updateMenuDraft(item, "description", event.target.value),
+                            }),
+                          ),
+                          React.createElement(
+                            "div",
+                            { className: "admin-menu-item-actions" },
+                            React.createElement(
+                              "button",
+                              {
+                                type: "button",
+                                className: "btn-outline admin-action-btn",
+                                disabled: isBusy,
+                                onClick: () => saveInlineMenuItem(item),
+                              },
+                              isBusy ? "Đang lưu..." : "Lưu giá & ghi chú",
+                            ),
+                          ),
+                        ),
+                      );
+                    })
+                  : React.createElement(
+                      "p",
+                      { className: "muted" },
+                      menuItems.length
+                        ? "Không có món khớp bộ lọc."
+                        : "Chưa có món trong database.",
+                    ),
+              ),
+        ),
+      ),
     );
 
   return React.createElement(
@@ -1333,5 +2203,6 @@ export function AdminPage() {
           ),
     )
       : null,
+    activeAdminSection === "menu" ? renderMenuManager() : null,
   );
 }
