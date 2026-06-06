@@ -44,16 +44,23 @@ npm run dev
 
 Then open `http://127.0.0.1:5500/`.
 
-## Deploy To GitHub Pages
+## Deploy To Vercel
 
-This project is ready to publish as a static GitHub Pages site.
+This project is deployed only on Vercel as a static frontend.
 
-1. Push the repository to GitHub.
-2. In GitHub, open `Settings` > `Pages`.
-3. Set `Build and deployment` to `GitHub Actions`.
-4. Push to the `main` branch or run the workflow manually from the `Actions` tab.
+1. Connect this repository to a Vercel project.
+2. Keep the framework preset as `Other`.
+3. Leave the build command empty.
+4. Set the output directory to the project root.
+5. Push to the `main` branch to redeploy automatically.
 
-Because the app uses `HashRouter`, routes continue to work on GitHub Pages without extra rewrite rules.
+Production URL:
+
+```text
+https://webbq.vercel.app/
+```
+
+Because the app uses `HashRouter`, routes continue to work on Vercel without extra rewrite rules.
 
 ## Supabase Setup
 
