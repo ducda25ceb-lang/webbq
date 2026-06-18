@@ -9,8 +9,8 @@ body {
   font-family: "Raleway", sans-serif;
   color: var(--text);
   background:
-    radial-gradient(circle at 10% 0%, #22262a 0%, var(--bg-main) 42%),
-    linear-gradient(135deg, #111314, #191a1d);
+    radial-gradient(circle at 10% 0%, var(--body-gradient-1) 0%, var(--bg-main) 42%),
+    linear-gradient(135deg, var(--body-gradient-2), var(--body-gradient-3));
   min-height: 100%;
 }
 
@@ -48,8 +48,8 @@ h4 {
 .panel {
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.04),
-    rgba(255, 255, 255, 0.01)
+    var(--panel-highlight),
+    var(--panel-lowlight)
   );
   border: 1px solid var(--line);
   border-radius: var(--radius);
